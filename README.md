@@ -30,17 +30,18 @@ The server will start on `http://localhost:8000`. You can view the API documenta
 
 ### Running with Docker
 
-    If you prefer to use Docker for development or deployment, follow these steps to build and run your application inside a Docker container.
+If you prefer to use Docker for development or deployment, follow these steps to build and run your application inside a Docker container.
 
-    a. Build the Docker image:
+1. Build the Docker image:
 
     ```bash
     docker build -t bc24-api .
     ```
 
+    
     This command builds a Docker image named `bc24-api` from the Dockerfile in the current directory.
 
-    b. Run the Docker container:
+2. Run the Docker container:
 
     ```bash
     docker run -d --name bc24-api-container -p 8000:8000 bc24-api
@@ -48,7 +49,7 @@ The server will start on `http://localhost:8000`. You can view the API documenta
 
     This command runs the `bc24-api` image in a container named `bc24-api-container`. It also maps port 8000 of the container to port 8000 on the host, allowing you to access the API at `http://localhost:8000`.
 
-    You can now access the API and its documentation in the same way as running it locally without Docker.
+You can now access the API and its documentation in the same way as running it locally without Docker.
 
 ## Deployment to Raspberry Pi
 
