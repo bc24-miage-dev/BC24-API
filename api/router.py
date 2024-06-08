@@ -1,12 +1,15 @@
 from fastapi import APIRouter, HTTPException, status
-from shemas.shemas import Example
+from shemas.shemas import Example, RoleAssignment
+
+from web3.middleware import geth_poa_middleware
 
 from web3 import Web3
 
 # Step 2: Connect to your local Ethereum node
-web3 = Web3(Web3.HTTPProvider("http://localhost:8545"))
+web3 = Web3(Web3.HTTPProvider("https://validator3.rpc.bc24.miage.dev"))
+web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
-contract_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+contract_address = "0x42699A7612A82f1d9C36148af9C77354759b210b"
 contract_abi = [
     {
         "inputs": [
@@ -1284,11 +1287,44 @@ async def get_examples() -> list[Example]:
     return [Example(**ex)for ex in fake_db]
 
 
+@router.post("/assign-role")
+async def assign_role(data: RoleAssignment):
+    # Ensure the wallet address is valid
+    if not web3.is_address(data.wallet_address):
+        raise HTTPException(status_code=400, detail="Invalid wallet address")
+
+    # Replace these with your account details
+    account = web3.eth.account.from_key(
+        "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
+
+    # Prepare the transaction
+    txn_dict = contract.functions.giveUserRole(data.wallet_address, data.role).build_transaction({
+        "from": account.address,
+        'chainId': 1337,  # Mainnet. Change accordingly if you're using a testnet
+        'nonce': web3.eth.get_transaction_count(account.address),
+    })
+
+    # Sign the transaction
+    signed_txn = web3.eth.account.sign_transaction(
+        txn_dict, private_key=account.key)
+
+    # Send the transaction
+    txn_receipt = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+    # Wait for the transaction to be mined
+    txn_receipt = web3.eth.wait_for_transaction_receipt(txn_receipt)
+
+    print(txn_receipt)
+
+    return {"status": "success", "transaction_hash": txn_receipt.transactionHash.hex()}
+
+
 @router.get("/test_mint")
 async def test():
     # Account details
-    account_address = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'  # Replace YOUR_ACCOUNT_ADDRESS
-    private_key = '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d'  # Replace YOUR_PRIVATE_KEY
+    # Replace YOUR_ACCOUNT_ADDRESS
+    account = web3.eth.account.from_key(
+        "99f55cdda1001d13735212a7cd2944f12460046f8c26c17d784ccaa0042eeb62")
 
     # Function parameters
     resourceId = 1  # Example resourceId
@@ -1298,35 +1334,37 @@ async def test():
 
     # Build the transaction
     transaction = contract.functions.mintRessource(resourceId, quantity, _metaData, ingredients).build_transaction({
+        "from": account.address,
         'chainId': 1337,
+        "gasPrice": web3.eth.gas_price,
+        "nonce": web3.eth.get_transaction_count(account.address),
     })
 
     # Sign the transaction
     signed_txn = web3.eth.account.sign_transaction(
-        transaction, private_key=private_key)
+        transaction, private_key=account.key)
 
     # Send the transaction
+
     txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
     # Wait for the transaction to be mined
     txn_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
 
-    print(txn_receipt)
+    print(txn_receipt.logs)
 
-
-    return {"Transaction successful with hash": txn_hash.hex()}
+    return {"Transaction successful with hash"}
 
 
 @router.get("/ResourceCreatedEvents")
 async def ResourceCreatedEvents():
-    # Testing the event filters 
-    event_filter =  contract.events.ResourceCreatedEvent.create_filter(fromBlock='latest')
-    print(contract.events.ResourceCreatedEvent.get_logs(fromBlock=1))
-    
+    # Testing the event filters
+    last_event = contract.events.ResourceCreatedEvent.get_logs(fromBlock=1)[
+        0].args
+
+    return {"Event": last_event}
 
 
-
-   
 @router.get("/status/200")
 async def status_200():
     return {"status": "OK"}
