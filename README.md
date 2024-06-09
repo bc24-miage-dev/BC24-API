@@ -38,7 +38,6 @@ If you prefer to use Docker for development or deployment, follow these steps to
     docker build -t bc24-api .
     ```
 
-    
     This command builds a Docker image named `bc24-api` from the Dockerfile in the current directory.
 
 2. Run the Docker container:
