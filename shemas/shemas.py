@@ -23,3 +23,6 @@ class MetaData(BaseModel):
 class MintToManyData(BaseModel):
     tokenId: int
     metaData: dict
+
+class WalletAddress(BaseModel):
+    wallet_address: str
