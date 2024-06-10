@@ -1,7 +1,7 @@
 import json
 import random
 from fastapi import APIRouter, HTTPException, status
-from shemas.shemas import MetaData, MintToManyData, RoleAssignment
+from shemas.shemas import MetaData, MintToManyData, RoleAssignment, TransferResource
 from core.config import contract_settings
 from web3.middleware import geth_poa_middleware
 from web3 import Web3
@@ -126,6 +126,45 @@ async def metadata(tokenId: int):
             status_code=500, detail=f"Failed to get metadata: {e}")
 
     return {"metadata": metadata}
+
+
+
+@router.post("/transferResource")
+async def transfer_resource(transfer: TransferResource):
+    if (not web3.is_address(transfer.wallet_address_owner)): # Check if the sender s wallet addresses is valid
+        raise HTTPException(status_code=400, detail="Invalid wallet address for the sender")
+    if (not web3.is_address(transfer.wallet_address_receiver)):
+        raise HTTPException(status_code=400, detail="Invalid wallet address for the receiver") # Check if the receiver s wallet addresses is valid
+    try:
+        # Replace these with your account details
+        account = web3.eth.account.from_key(
+            "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
+
+        # Prepare the transaction
+        txn_dict = contract.functions."transfer method"(transfer.tokenId , #need to replace this with the actual method
+                                                    transfer.quantity ,
+                                                    transfer.wallet_address_owner ,
+                                                    transfer.wallet_address_receiver).build_transaction({
+            "from": account.address,
+            'chainId': 1337,  # Mainnet. Change accordingly if you're using a testnet
+            'nonce': web3.eth.get_transaction_count(account.address),
+        })
+
+        # Sign the transaction
+        signed_txn = web3.eth.account.sign_transaction(
+            txn_dict, private_key=account.key)
+
+        # Send the transaction
+        txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+        # Wait for the transaction to be mined
+        txn_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to send transaction: {e}")
+
+    return {"status": "success", "transaction_hash": txn_receipt.transactionHash.hex()}
 
 @router.get("/events/{event}")
 async def ResourceCreatedEvents(eventName: str):

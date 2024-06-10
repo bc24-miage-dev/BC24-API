@@ -23,3 +23,9 @@ class MetaData(BaseModel):
 class MintToManyData(BaseModel):
     tokenId: int
     metaData: dict
+
+class TransferResource(BaseModel):
+    tokenId: int
+    quantity: int
+    wallet_address_owner: str
+    wallet_address_receiver: str
