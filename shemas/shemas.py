@@ -11,8 +11,8 @@ class RoleAssignment(BaseModel):
 class MintRessource(BaseModel):
     resourceId: int
     quantity: int
-    _metaData: str
-    ingredients: list
+    metaData: dict
+    ingredients: list[int]
 
 
 class MetaData(BaseModel):
