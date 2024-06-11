@@ -108,13 +108,16 @@ async def mint_resource():
 
     return {resource_created_events[0].args, resource_metaDataEvent[0].args}
 
+
 @router.post("/setMetaData")
 async def set_metadata(data: MetaData):
     return "to implement"
 
+
 @router.post("/mintOneToMany")
 async def mint_one_to_many(data: MintToManyData):
     return "to implement"
+
 
 @router.get("/metadata/{tokenId}")
 async def metadata(tokenId: int):
@@ -127,31 +130,49 @@ async def metadata(tokenId: int):
 
     return {"metadata": metadata}
 
-@router.get("/getResourcesByWalletAddress/{walletAddress}")
-async def get_resources_by_wallet_address(walletAddress: str):
-    if not web3.is_address(walletAddress.wallet_address):
+
+@router.get("/getResourcesByWalletAddress/{wallet_address}")
+async def get_resources_by_wallet_address(wallet_address: str):
+    if not web3.is_address(wallet_address):
         raise HTTPException(status_code=400, detail="Invalid wallet address")
     try:
-        # Replace these with your account details
-        account = web3.eth.account.from_key(
-            "Do i use admin private key or user private key? if user how do i get it?")
+        start_block = 0
+        end_block = web3.eth.block_number
+        active_tokens = {}
 
-        # Prepare the transaction
-        txn_dict = contract.functions."Waiting for method"(walletAddress.wallet_address).build_transaction({
-            "from": account.address,
-            'chainId': 1337,  # Mainnet. Change accordingly if you're using a testnet
-            'nonce': web3.eth.get_transaction_count(account.address),
-        })
+        # Fetch TransferSingle events in batches
+        for block in range(start_block, end_block + 1, 1000):  # Adjust batch size as needed
+            batch_end_block = min(block + 999, end_block)
+            events = contract.events.TransferSingle.get_logs(
+                fromBlock=block, toBlock=batch_end_block)
 
-        # Sign the transaction
-        signed_txn = web3.eth.account.sign_transaction(
-            txn_dict, private_key=account.key)
+            for event in events:
+                event_args = event['args']
+                from_address = event_args['from']
+                to_address = event_args['to']
+                token_id = event_args['id']
+                value = event_args['value']
 
-        # Send the transaction
-        txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                # If the token was transferred to the wallet_address, mark it as active
+                if to_address.lower() == wallet_address.lower():
+                    if token_id not in active_tokens:
+                        active_tokens[token_id] = value
+                    else:
+                        active_tokens[token_id] += value
 
-        # Wait for the transaction to be mined
-        txn_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
+                # If the token was transferred from the wallet_address, reduce its count or remove it
+                if from_address.lower() == wallet_address.lower():
+                    if token_id in active_tokens:
+                        if active_tokens[token_id] <= value:
+                            del active_tokens[token_id]
+                        else:
+                            active_tokens[token_id] -= value
+
+        # Filter out tokens with zero balance
+        active_tokens = {token_id: balance for token_id,
+                         balance in active_tokens.items() if balance > 0}
+
+        return {"active_tokens for account": active_tokens}
     except Exception as e:
         print(e)
         raise HTTPException(
@@ -174,12 +195,13 @@ async def ResourceCreatedEvents(eventName: str):
         logs = []
         for block in range(from_block, to_block + 1, batch_size):
             batch_end_block = min(block + batch_size - 1, to_block)
-            logs.append(contract.events[eventName].get_logs(fromBlock=block, toBlock=batch_end_block))
-    
-    # iterate over the logs and append them to the list
-            
+            logs.append(contract.events[eventName].get_logs(
+                fromBlock=block, toBlock=batch_end_block))
 
-    logs = fetch_logs_in_batches(contract, 'ResourceCreatedEvent', start_block, end_block, batch_size)
+    # iterate over the logs and append them to the list
+
+    logs = fetch_logs_in_batches(
+        contract, 'ResourceCreatedEvent', start_block, end_block, batch_size)
 
     """  last_event = contract.events.ResourceCreatedEvent.get_logs(fromBlock=1)[
         0].args """
