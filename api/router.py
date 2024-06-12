@@ -16,7 +16,7 @@ contract = web3.eth.contract(
 
 router = APIRouter()
 # poetry shell
-# uvicorn main:app --reload
+# uvicorn main:app --reload --port=8080
 # To launch the server
 
 @router.post("/assignRole")
@@ -68,43 +68,18 @@ async def mint_resource(mint_resource: MintRessource):
         # idk how to make it work as json format
 
         ingredients = mint_resource.ingredients
-        print(resourceId)
-        print(quantity)
-        print(_metaData)
-        print(ingredients)
+        # print(resourceId)
+        # print(quantity)
+        # print(_metaData)
+        # print(ingredients)
 
         # Convert JSON string back to dictionary
         _metaData_dict = json.loads(_metaData)
 
         # Iterate over dictionary
         for key, value in _metaData_dict.items():
-            print(f"Keydjzqjis: {key}, Value: {value}")
+            print(f"Key: {key}, Value: {value}")
 
-        
-        
-
-        # data = {
-        #     # Random weight between 50.0 and 100.0 kg
-        #     "weight": round(random.uniform(50.0, 100.0), 2),
-        #     "age": random.randint(18, 100),  # Random age between 18 and 100
-        #     # Randomly choose between True (sick) and False (not sick)
-        #     "sickness": random.choice([True, False]),
-        #     # Random height between 150.0 and 200.0 cm
-        #     "height": round(random.uniform(150.0, 200.0), 2),
-        #     # Randomly choose a blood type
-        #     "blood_type": random.choice(['A', 'B', 'AB', 'O']),
-        # }
-
-        # # Convert the dictionary to a JSON string
-        # json_data = json.dumps(mint_resource._metaData, indent=4)
-        # # Function parameters
-        # resourceId = 1  # Example resourceId
-        # quantity = 1  # Example quantity
-
-        # _metaData = json_data  # Example metadata
-        # ingredients = []  # Example ingredients
-
-        # Build the transaction
         transaction = contract.functions.mintRessource(resourceId, quantity, _metaData, ingredients).build_transaction({
             "from": account.address,
             'chainId': 1337,
