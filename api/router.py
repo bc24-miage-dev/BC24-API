@@ -150,9 +150,9 @@ def fetch_and_enrich_metadata(tokenId):
     metadata = contract.functions.getMetaData(tokenId).call()
 
     enriched_ingredients = []
+    ingredients_token_ids = metadata[3]
 
-    if metadata[3]:  # Assuming metadata[3] is the ingredients list
-        # Recursively fetch and enrich metadata for each ingredient tokenId
+    if ingredients_token_ids:  
         for ingredient_tokenId in metadata[3]:
             enriched_ingredient = fetch_and_enrich_metadata(ingredient_tokenId)
             enriched_ingredients.append(enriched_ingredient)
@@ -218,22 +218,3 @@ async def ResourceCreatedEvents(eventName: str):
 
     return {"Event": logs}
 
-
-@router.get("/status/200")
-async def status_200():
-    return {"status": "OK"}
-
-
-@router.get("/status/403")
-async def status_403():
-    raise HTTPException(status_code=403, detail="Forbidden")
-
-
-@router.get("/status/404")
-async def status_404():
-    raise HTTPException(status_code=404, detail="Not Found")
-
-
-@router.get("/status/500")
-async def status_500():
-    raise HTTPException(status_code=500, detail="Internal Server Error")
