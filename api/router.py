@@ -130,7 +130,6 @@ async def mint_resource(mint_resource: MintRessource):
             status_code=500, detail=f"Failed to send transaction: {e}")
 
 
-
 @router.post("/mintOneToMany")
 async def mint_one_to_many(data: MintToManyData):
     return "to implement"
@@ -153,7 +152,7 @@ def fetch_and_enrich_metadata(tokenId):
     enriched_ingredients = []
     ingredients_token_ids = metadata[3]
 
-    if ingredients_token_ids:  
+    if ingredients_token_ids:
         for ingredient_tokenId in metadata[3]:
             enriched_ingredient = fetch_and_enrich_metadata(ingredient_tokenId)
             enriched_ingredients.append(enriched_ingredient)
@@ -195,7 +194,6 @@ async def set_metadata(data: MetaData):
         print(e)
         raise HTTPException(
             status_code=500, detail=f"Failed to send transaction: {e}")
-
 
 
 @router.get("/tokens/{wallet_address}")
@@ -245,67 +243,57 @@ async def get_resources_by_wallet_address(wallet_address: str):
         raise HTTPException(
             status_code=500, detail=f"Failed to send transaction: {e}")
 
-    return "to implement"
 
-
-
-
-@router.post("/transferResource")
+@router.post("/transfer")
 async def transfer_resource(transfer: TransferResource):
-    if (not web3.is_address(transfer.wallet_address_owner)): # Check if the sender s wallet addresses is valid
-        raise HTTPException(status_code=400, detail="Invalid wallet address for the sender")
+    # Check if the sender s wallet addresses is valid
+    if (not web3.is_address(transfer.wallet_address_owner)):
+        raise HTTPException(
+            status_code=400, detail="Invalid wallet address for the sender")
     if (not web3.is_address(transfer.wallet_address_receiver)):
-        raise HTTPException(status_code=400, detail="Invalid wallet address for the receiver") # Check if the receiver s wallet addresses is valid
+        raise HTTPException(
+            status_code=400, detail="Invalid wallet address for the receiver")
     try:
-        # Replace these with your account details
+
         account = web3.eth.account.from_key(
-            "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
+            "99f55cdda1001d13735212a7cd2944f12460046f8c26c17d784ccaa0042eeb62")
 
-        # Prepare the transaction
-        txn_dict = contract.functions."transfer method"(transfer.tokenId , #need to replace this with the actual method
-                                                    transfer.quantity ,
-                                                    transfer.wallet_address_owner ,
-                                                    transfer.wallet_address_receiver).build_transaction({
-            "from": account.address,
-            'chainId': 1337,  # Mainnet. Change accordingly if you're using a testnet
-            'nonce': web3.eth.get_transaction_count(account.address),
-        })
+        txn_dict = contract.functions.safeTransferFrom(transfer.wallet_address_owner,
+                                                       transfer.wallet_address_receiver,
+                                                       transfer.tokenId,
+                                                       transfer.quantity,
+                                                       b'').build_transaction({
+                                                           "from": account.address,
+                                                           'chainId': 1337,
+                                                           'nonce': web3.eth.get_transaction_count(account.address),
+                                                       })
 
-        # Sign the transaction
         signed_txn = web3.eth.account.sign_transaction(
             txn_dict, private_key=account.key)
 
-        # Send the transaction
         txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-        # Wait for the transaction to be mined
         txn_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
+        return {"status": "success", }
     except Exception as e:
         print(e)
         raise HTTPException(
             status_code=500, detail=f"Failed to send transaction: {e}")
 
-    return {"status": "success", "transaction_hash": txn_receipt.transactionHash.hex()}
 
 @router.get("/events/{event}")
-async def ResourceCreatedEvents(eventName: str):
+async def get_event_logs(event: str):
 
     start_block = 0
     end_block = web3.eth.block_number
     batch_size = 1000
 
-    def fetch_logs_in_batches(contract, event, from_block, to_block, batch_size):
-        logs = []
-        for block in range(from_block, to_block + 1, batch_size):
-            batch_end_block = min(block + batch_size - 1, to_block)
-            logs.append(contract.events[eventName].get_logs(
-                fromBlock=block, toBlock=batch_end_block))
+    logs = []
+    for block in range(start_block, end_block + 1, batch_size):
+        batch_end_block = min(block + batch_size - 1, end_block)
+        events = contract.events[event].get_logs(
+            fromBlock=block, toBlock=batch_end_block)
+        logs += [event.args for event in events]
+       
 
-    logs = fetch_logs_in_batches(
-        contract, 'ResourceCreatedEvent', start_block, end_block, batch_size)
-
-    """  last_event = contract.events.ResourceCreatedEvent.get_logs(fromBlock=1)[
-        0].args """
-
-    return {"Event": logs}
-
+    return {"event": event, "data": logs}

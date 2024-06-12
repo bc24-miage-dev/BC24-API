@@ -30,10 +30,7 @@ class TransferResource(BaseModel):
     tokenId: int
     quantity: int
     wallet_address_owner: str
-
-
-class WalletAddress(BaseModel):
-    wallet_address: str
+    wallet_address_receiver: str
 
 
 class ResourceTemplateResponse(BaseModel):
