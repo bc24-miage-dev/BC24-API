@@ -4,33 +4,36 @@ from typing import Any, List
 from pydantic import BaseModel
 
 
-class RoleAssignment(BaseModel):
-    wallet_address: str
+class RoleAssignmentRequest(BaseModel):
+    from_wallet_address: str
+    target_wallet_address: str
     role: str
 
 
-class MintRessource(BaseModel):
+class MintRessourceRequest(BaseModel):
+    from_wallet_address: str
     resourceId: int
     quantity: int
     metaData: dict
     ingredients: list[int]
 
 
-class MetaData(BaseModel):
+class MetaDataRequest(BaseModel):
+    from_wallet_address: str
     tokenId: int
     metaData: dict
 
 
-class MintToManyData(BaseModel):
+class MintToManyDataRequest(BaseModel):
     tokenId: int
     metaData: dict
 
 
-class TransferResource(BaseModel):
+class TransferResourceRequest(BaseModel):
     tokenId: int
     quantity: int
-    wallet_address_owner: str
-    wallet_address_receiver: str
+    from_wallet_address: str
+    to_wallet_address: str
 
 
 class ResourceTemplateResponse(BaseModel):
@@ -44,7 +47,7 @@ class ResourceTemplateResponse(BaseModel):
     produces_resources_amounts: List[Any]
 
 
-class MetaData(BaseModel):
+class MetaDataResponse(BaseModel):
     data: List[Any]
     resource_id: int
     resource_name: str

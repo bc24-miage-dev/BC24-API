@@ -1,5 +1,6 @@
 import json
 from fastapi import APIRouter, HTTPException, status
+from service.walletService import PrivateKeyService
 from shemas.shemas import *
 from core.config import contract_settings
 from web3.middleware import geth_poa_middleware
@@ -11,6 +12,8 @@ web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 contract = web3.eth.contract(
     address=contract_settings.contract_address, abi=contract_settings.contract_abi)
+
+private_key_service = PrivateKeyService()
 
 
 router = APIRouter()
@@ -38,15 +41,18 @@ async def get_role_of_wallet_address(wallet_address: str):
 
 
 @router.post("/roles/assignRole")
-async def assign_role(data: RoleAssignment):
-    if not web3.is_address(data.wallet_address):
+async def assign_role(request: RoleAssignmentRequest):
+    if not web3.is_address(request.from_wallet_address):
         raise HTTPException(status_code=400, detail="Invalid wallet address")
+    if not web3.is_address(request.target_wallet_address):
+        raise HTTPException(
+            status_code=400, detail="Invalid target wallet address")
     try:
         # TODO: Replace these with your account details
         account = web3.eth.account.from_key(
-            "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
+            private_key_service.get_private_key(request.from_wallet_address))
 
-        txn_dict = contract.functions.giveUserRole(data.wallet_address, data.role).build_transaction({
+        txn_dict = contract.functions.giveUserRole(request.target_wallet_address, request.role).build_transaction({
             "from": account.address,
             'chainId': 1337,
             'nonce': web3.eth.get_transaction_count(account.address),
@@ -94,18 +100,18 @@ async def get_resources_templates(resource_id: Optional[int] = None, required_ro
 
 
 @router.post("/mintResource")
-async def mint_resource(mint_resource: MintRessource):
+async def mint_resource(request: MintRessourceRequest):
     try:
-        # Get account form private key
         account = web3.eth.account.from_key(
-            "99f55cdda1001d13735212a7cd2944f12460046f8c26c17d784ccaa0042eeb62")
-        resourceId = mint_resource.resourceId
-        quantity = mint_resource.quantity
-        _metaData = json.dumps(mint_resource.metaData, indent=4)
+            private_key_service.get_private_key(request.from_wallet_address))
 
-        ingredients = mint_resource.ingredients
+        resource_id = request.resourceId
+        quantity = request.quantity
+        meta_data = json.dumps(request.metaData, indent=4)
 
-        transaction = contract.functions.mintRessource(resourceId, quantity, _metaData, ingredients).build_transaction({
+        ingredients = request.ingredients
+
+        transaction = contract.functions.mintRessource(resource_id, quantity, meta_data, ingredients).build_transaction({
             "from": account.address,
             'chainId': 1337,
             "gasPrice": web3.eth.gas_price,
@@ -131,7 +137,7 @@ async def mint_resource(mint_resource: MintRessource):
 
 
 @router.post("/mintOneToMany")
-async def mint_one_to_many(data: MintToManyData):
+async def mint_one_to_many(data: MintToManyDataRequest):
     return "to implement"
 
 
@@ -157,22 +163,24 @@ def fetch_and_enrich_metadata(tokenId):
             enriched_ingredient = fetch_and_enrich_metadata(ingredient_tokenId)
             enriched_ingredients.append(enriched_ingredient)
 
-    return MetaData(data=metadata[0],
-                    resource_id=metadata[1],
-                    resource_name=metadata[2],
-                    ingredients=enriched_ingredients)
+    return MetaDataResponse(data=metadata[0],
+                            resource_id=metadata[1],
+                            resource_name=metadata[2],
+                            ingredients=enriched_ingredients)
 
 
 @router.post("/metadata")
-async def set_metadata(data: MetaData):
+async def set_metadata(request: MetaDataRequest):
+    if not web3.is_address(request.from_wallet_address):
+        raise HTTPException(status_code=400, detail="Invalid wallet address")
     try:
         account = web3.eth.account.from_key(
-            "99f55cdda1001d13735212a7cd2944f12460046f8c26c17d784ccaa0042eeb62")
+            private_key_service.get_private_key(request.from_wallet_address))
 
-        tokenId = data.tokenId
-        _metaData = json.dumps(data.metaData, indent=4)
+        token_id = request.tokenId
+        meta_data = json.dumps(request.metaData, indent=4)
 
-        transaction = contract.functions.setMetaData(tokenId, _metaData).build_transaction({
+        transaction = contract.functions.setMetaData(token_id, meta_data).build_transaction({
             "from": account.address,
             'chainId': 1337,
             "gasPrice": web3.eth.gas_price,
@@ -245,7 +253,7 @@ async def get_resources_by_wallet_address(wallet_address: str):
 
 
 @router.post("/transfer")
-async def transfer_resource(transfer: TransferResource):
+async def transfer_resource(transfer: TransferResourceRequest):
     # Check if the sender s wallet addresses is valid
     if (not web3.is_address(transfer.wallet_address_owner)):
         raise HTTPException(
@@ -256,10 +264,10 @@ async def transfer_resource(transfer: TransferResource):
     try:
 
         account = web3.eth.account.from_key(
-            "99f55cdda1001d13735212a7cd2944f12460046f8c26c17d784ccaa0042eeb62")
+            private_key_service.get_private_key(transfer.from_wallet_address))
 
-        txn_dict = contract.functions.safeTransferFrom(transfer.wallet_address_owner,
-                                                       transfer.wallet_address_receiver,
+        txn_dict = contract.functions.safeTransferFrom(transfer.from_wallet_address,
+                                                       transfer.to_wallet_address,
                                                        transfer.tokenId,
                                                        transfer.quantity,
                                                        b'').build_transaction({
@@ -294,6 +302,5 @@ async def get_event_logs(event: str):
         events = contract.events[event].get_logs(
             fromBlock=block, toBlock=batch_end_block)
         logs += [event.args for event in events]
-       
 
     return {"event": event, "data": logs}
