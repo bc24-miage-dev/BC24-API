@@ -57,7 +57,7 @@ To deploy the Docker image to a Raspberry Pi, follow these steps:
 1. **Save the Docker Image**: First, save your Docker image to a tar file on your local machine.
 
    ```bash
-   docker save bc24-api > bc24-api.tar
+   ddocker save bc24-api -o bc24-api.tar
    ```
 
 2. **Transfer the Image to Raspberry Pi**: Use `scp` to securely transfer the image file to your Raspberry Pi. Replace `raspberry_pi_username` with your actual Raspberry Pi's username and `raspberry_pi_ip` with its IP address.
@@ -72,7 +72,7 @@ To deploy the Docker image to a Raspberry Pi, follow these steps:
    ssh pi@45.80.25.84
    cd ~/Documents
    (rm -rf bc24-api.tar) # if the image is already present
-   docker load < bc24-api.tar
+   docker load -i bc24-api.tar
    ```
 
 4. **Run the Docker Container on Raspberry Pi**: Finally, run the Docker container on your Raspberry Pi.  
