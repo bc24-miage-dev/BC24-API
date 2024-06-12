@@ -1,5 +1,6 @@
 
 import json
+from typing import Any, List
 from pydantic import BaseModel
 
 
@@ -11,8 +12,8 @@ class RoleAssignment(BaseModel):
 class MintRessource(BaseModel):
     resourceId: int
     quantity: int
-    _metaData: str
-    ingredients: list
+    metaData: dict
+    ingredients: list[int]
 
 
 class MetaData(BaseModel):
@@ -24,5 +25,23 @@ class MintToManyData(BaseModel):
     tokenId: int
     metaData: dict
 
+<<<<<<< walletAddress_resources
 class WalletAddress(BaseModel):
     wallet_address: str
+=======
+class ResourceTemplateResponse(BaseModel):
+    resource_id: int
+    resource_name: str
+    needed_resources: List[Any]
+    needed_resources_amounts: List[Any]
+    initial_amount_minted: int
+    required_role: str
+    produces_resources: List[Any]
+    produces_resources_amounts: List[Any]
+
+class MetaData(BaseModel):
+    data: List[Any]
+    resource_id: int
+    resource_name: str
+    ingredients: List[Any]
+>>>>>>> dev
