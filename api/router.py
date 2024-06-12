@@ -91,7 +91,6 @@ async def mint_resource(mint_resource: MintRessource):
         resource_metaDataEvent = contract.events.ResourceMetaDataChangedEvent(
         ).process_receipt(txn_receipt)
 
-        # print(resource_created_events[0].args)
     except Exception as e:
         print(e)
         raise HTTPException(
