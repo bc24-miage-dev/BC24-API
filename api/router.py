@@ -6,7 +6,6 @@ from web3.middleware import geth_poa_middleware
 from web3 import Web3
 from typing import List, Optional
 
-# Connect to the blockchain
 web3 = Web3(Web3.HTTPProvider(contract_settings.validator_address))
 web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
@@ -20,7 +19,6 @@ router = APIRouter()
 @router.get("/roles")
 async def get_roles():
     try:
-        # get templates from the contract and extract all possible roles
         resources = contract.functions.getResourceTemplates().call()
         roles = list(set([resource[5] for resource in resources]))
         return roles
@@ -32,7 +30,6 @@ async def get_roles():
 @router.get("/roles/{wallet_address}")
 async def get_role_of_wallet_address(wallet_address: str):
     try:
-        # Call the contract function
         roles = contract.functions.userRoles(wallet_address).call()
         return {"role": roles}
     except Exception as e:
@@ -42,7 +39,6 @@ async def get_role_of_wallet_address(wallet_address: str):
 
 @router.post("/roles/assignRole")
 async def assign_role(data: RoleAssignment):
-    # Ensure the wallet address is valid
     if not web3.is_address(data.wallet_address):
         raise HTTPException(status_code=400, detail="Invalid wallet address")
     try:
@@ -50,21 +46,17 @@ async def assign_role(data: RoleAssignment):
         account = web3.eth.account.from_key(
             "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
 
-        # Prepare the transaction
         txn_dict = contract.functions.giveUserRole(data.wallet_address, data.role).build_transaction({
             "from": account.address,
-            'chainId': 1337,  # Mainnet. Change accordingly if you're using a testnet
+            'chainId': 1337,
             'nonce': web3.eth.get_transaction_count(account.address),
         })
 
-        # Sign the transaction
         signed_txn = web3.eth.account.sign_transaction(
             txn_dict, private_key=account.key)
 
-        # Send the transaction
         txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-        # Wait for the transaction to be mined
         web3.eth.wait_for_transaction_receipt(txn_hash)
 
         return {"status": "Role assigned successfully"}
@@ -77,10 +69,8 @@ async def assign_role(data: RoleAssignment):
 @router.get("/resourceTemplates", response_model=List[ResourceTemplateResponse])
 async def get_resources_templates(resource_id: Optional[int] = None, required_role: Optional[str] = None):
     try:
-        # Call the contract function
         resources = contract.functions.getResourceTemplates().call()
 
-        # Filter resources based on query parameters
         filtered_resources = [
             ResourceTemplateResponse(
                 resource_id=resource[0],
@@ -107,7 +97,6 @@ async def get_resources_templates(resource_id: Optional[int] = None, required_ro
 async def mint_resource(mint_resource: MintRessource):
     try:
         # Get account form private key
-        print(mint_resource)
         account = web3.eth.account.from_key(
             "99f55cdda1001d13735212a7cd2944f12460046f8c26c17d784ccaa0042eeb62")
         resourceId = mint_resource.resourceId
@@ -123,18 +112,13 @@ async def mint_resource(mint_resource: MintRessource):
             "nonce": web3.eth.get_transaction_count(account.address),
         })
 
-        # Sign the transaction
         signed_txn = web3.eth.account.sign_transaction(
             transaction, private_key=account.key)
 
-        # Send the transaction
-
         txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-        # Wait for the transaction to be mined
         txn_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
 
-        # Extract and decode the 'ResourceCreatedEvent' from the transaction receipt
         resource_created_events = contract.events.ResourceCreatedEvent(
         ).process_receipt(txn_receipt)
 
@@ -154,22 +138,34 @@ async def mint_one_to_many(data: MintToManyData):
 @router.get("/metadata/{tokenId}")
 async def metadata(tokenId: int):
     try:
-        metadata = contract.functions.metaData(tokenId).call()
-        print(metadata)
-        # Call the contract function
-        metadata = contract.functions.getMetaData(tokenId).call()
-        print(metadata)
+        enriched_metadata = fetch_and_enrich_metadata(tokenId)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to get metadata: {e}")
 
-    return {"metadata": metadata}
+    return enriched_metadata
+
+
+def fetch_and_enrich_metadata(tokenId):
+    metadata = contract.functions.getMetaData(tokenId).call()
+
+    enriched_ingredients = []
+
+    if metadata[3]:  # Assuming metadata[3] is the ingredients list
+        # Recursively fetch and enrich metadata for each ingredient tokenId
+        for ingredient_tokenId in metadata[3]:
+            enriched_ingredient = fetch_and_enrich_metadata(ingredient_tokenId)
+            enriched_ingredients.append(enriched_ingredient)
+
+    return MetaData(data=metadata[0],
+                    resource_id=metadata[1],
+                    resource_name=metadata[2],
+                    ingredients=enriched_ingredients)
 
 
 @router.post("/metadata")
 async def set_metadata(data: MetaData):
     try:
-        # Get account form private key
         account = web3.eth.account.from_key(
             "99f55cdda1001d13735212a7cd2944f12460046f8c26c17d784ccaa0042eeb62")
 
@@ -183,18 +179,12 @@ async def set_metadata(data: MetaData):
             "nonce": web3.eth.get_transaction_count(account.address),
         })
 
-        # Sign the transaction
         signed_txn = web3.eth.account.sign_transaction(
             transaction, private_key=account.key)
 
-        # Send the transaction
-
         txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-        # Wait for the transaction to be mined
         txn_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
-
-        # Extract and decode the 'ResourceCreatedEvent' from the transaction receipt
 
         resource_metaDataEvent = contract.events.ResourceMetaDataChangedEvent(
         ).process_receipt(txn_receipt)
@@ -208,22 +198,17 @@ async def set_metadata(data: MetaData):
 
 @router.get("/events/{event}")
 async def ResourceCreatedEvents(eventName: str):
-    # Testing the event filters
 
-    # Example setup
     start_block = 0
     end_block = web3.eth.block_number
-    batch_size = 1000  # Adjust based on what your node can handle
+    batch_size = 1000
 
-    # Function to fetch logs in batches
     def fetch_logs_in_batches(contract, event, from_block, to_block, batch_size):
         logs = []
         for block in range(from_block, to_block + 1, batch_size):
             batch_end_block = min(block + batch_size - 1, to_block)
             logs.append(contract.events[eventName].get_logs(
                 fromBlock=block, toBlock=batch_end_block))
-
-    # iterate over the logs and append them to the list
 
     logs = fetch_logs_in_batches(
         contract, 'ResourceCreatedEvent', start_block, end_block, batch_size)
