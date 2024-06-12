@@ -1,10 +1,6 @@
 import json
 from fastapi import APIRouter, HTTPException, status
-<<<<<<< walletAddress_resources
-from shemas.shemas import MetaData, MintToManyData, RoleAssignment, WalletAddress
-=======
 from shemas.shemas import *
->>>>>>> dev
 from core.config import contract_settings
 from web3.middleware import geth_poa_middleware
 from web3 import Web3
@@ -133,13 +129,6 @@ async def mint_resource(mint_resource: MintRessource):
         raise HTTPException(
             status_code=500, detail=f"Failed to send transaction: {e}")
 
-<<<<<<< walletAddress_resources
-
-@router.post("/setMetaData")
-async def set_metadata(data: MetaData):
-    return "to implement"
-=======
->>>>>>> dev
 
 
 @router.post("/mintOneToMany")
@@ -209,7 +198,7 @@ async def set_metadata(data: MetaData):
 
 
 
-@router.get("/getResourcesByWalletAddress/{wallet_address}")
+@router.get("/tokens/{wallet_address}")
 async def get_resources_by_wallet_address(wallet_address: str):
     if not web3.is_address(wallet_address):
         raise HTTPException(status_code=400, detail="Invalid wallet address")
@@ -272,11 +261,6 @@ async def ResourceCreatedEvents(eventName: str):
             batch_end_block = min(block + batch_size - 1, to_block)
             logs.append(contract.events[eventName].get_logs(
                 fromBlock=block, toBlock=batch_end_block))
-<<<<<<< walletAddress_resources
-
-    # iterate over the logs and append them to the list
-=======
->>>>>>> dev
 
     logs = fetch_logs_in_batches(
         contract, 'ResourceCreatedEvent', start_block, end_block, batch_size)
