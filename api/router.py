@@ -100,7 +100,42 @@ async def mint_resource(mint_resource: MintRessource):
 
 @router.post("/setMetaData")
 async def set_metadata(data: MetaData):
-    return "to implement"
+    try:
+        # Get account form private key
+        account = web3.eth.account.from_key(
+            "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
+        
+        tokenId = data.tokenId
+        _metaData = json.dumps(data.metaData, indent=4)
+
+        transaction = contract.functions.setMetaData(tokenId, _metaData).build_transaction({
+            "from": account.address,
+            'chainId': 1337,
+            "gasPrice": web3.eth.gas_price,
+            "nonce": web3.eth.get_transaction_count(account.address),
+        })
+
+        # Sign the transaction
+        signed_txn = web3.eth.account.sign_transaction(
+            transaction, private_key=account.key)
+
+        # Send the transaction
+
+        txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+        # Wait for the transaction to be mined
+        txn_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
+
+        # Extract and decode the 'ResourceCreatedEvent' from the transaction receipt
+
+        resource_metaDataEvent = contract.events.ResourceMetaDataChangedEvent(
+        ).process_receipt(txn_receipt)
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to send transaction: {e}")
+
+    return {resource_metaDataEvent[0].args}
 
 
 
