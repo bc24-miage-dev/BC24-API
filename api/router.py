@@ -1,6 +1,10 @@
 import json
 from fastapi import APIRouter, HTTPException, status
+<<<<<<< walletAddress_resources
+from shemas.shemas import MetaData, MintToManyData, RoleAssignment, WalletAddress
+=======
 from shemas.shemas import *
+>>>>>>> dev
 from core.config import contract_settings
 from web3.middleware import geth_poa_middleware
 from web3 import Web3
@@ -129,6 +133,14 @@ async def mint_resource(mint_resource: MintRessource):
         raise HTTPException(
             status_code=500, detail=f"Failed to send transaction: {e}")
 
+<<<<<<< walletAddress_resources
+
+@router.post("/setMetaData")
+async def set_metadata(data: MetaData):
+    return "to implement"
+=======
+>>>>>>> dev
+
 
 @router.post("/mintOneToMany")
 async def mint_one_to_many(data: MintToManyData):
@@ -196,6 +208,57 @@ async def set_metadata(data: MetaData):
             status_code=500, detail=f"Failed to send transaction: {e}")
 
 
+
+@router.get("/getResourcesByWalletAddress/{wallet_address}")
+async def get_resources_by_wallet_address(wallet_address: str):
+    if not web3.is_address(wallet_address):
+        raise HTTPException(status_code=400, detail="Invalid wallet address")
+    try:
+        start_block = 0
+        end_block = web3.eth.block_number
+        active_tokens = {}
+
+        # Fetch TransferSingle events in batches
+        for block in range(start_block, end_block + 1, 1000):  # Adjust batch size as needed
+            batch_end_block = min(block + 999, end_block)
+            events = contract.events.TransferSingle.get_logs(
+                fromBlock=block, toBlock=batch_end_block)
+
+            for event in events:
+                event_args = event['args']
+                from_address = event_args['from']
+                to_address = event_args['to']
+                token_id = event_args['id']
+                value = event_args['value']
+
+                # If the token was transferred to the wallet_address, mark it as active
+                if to_address.lower() == wallet_address.lower():
+                    if token_id not in active_tokens:
+                        active_tokens[token_id] = value
+                    else:
+                        active_tokens[token_id] += value
+
+                # If the token was transferred from the wallet_address, reduce its count or remove it
+                if from_address.lower() == wallet_address.lower():
+                    if token_id in active_tokens:
+                        if active_tokens[token_id] <= value:
+                            del active_tokens[token_id]
+                        else:
+                            active_tokens[token_id] -= value
+
+        # Filter out tokens with zero balance
+        active_tokens = {token_id: balance for token_id,
+                         balance in active_tokens.items() if balance > 0}
+
+        return {"active_tokens for account": active_tokens}
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to send transaction: {e}")
+
+    return "to implement"
+
+
 @router.get("/events/{event}")
 async def ResourceCreatedEvents(eventName: str):
 
@@ -209,6 +272,11 @@ async def ResourceCreatedEvents(eventName: str):
             batch_end_block = min(block + batch_size - 1, to_block)
             logs.append(contract.events[eventName].get_logs(
                 fromBlock=block, toBlock=batch_end_block))
+<<<<<<< walletAddress_resources
+
+    # iterate over the logs and append them to the list
+=======
+>>>>>>> dev
 
     logs = fetch_logs_in_batches(
         contract, 'ResourceCreatedEvent', start_block, end_block, batch_size)

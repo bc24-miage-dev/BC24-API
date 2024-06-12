@@ -25,6 +25,10 @@ class MintToManyData(BaseModel):
     tokenId: int
     metaData: dict
 
+<<<<<<< walletAddress_resources
+class WalletAddress(BaseModel):
+    wallet_address: str
+=======
 class ResourceTemplateResponse(BaseModel):
     resource_id: int
     resource_name: str
@@ -40,3 +44,4 @@ class MetaData(BaseModel):
     resource_id: int
     resource_name: str
     ingredients: List[Any]
+>>>>>>> dev
