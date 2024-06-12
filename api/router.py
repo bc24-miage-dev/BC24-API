@@ -60,25 +60,11 @@ async def mint_resource(mint_resource: MintRessource):
         print(mint_resource)
         account = web3.eth.account.from_key(
             "99f55cdda1001d13735212a7cd2944f12460046f8c26c17d784ccaa0042eeb62")
-        # data = json.dumps(mint_resource._metaData, indent=4)
         resourceId = mint_resource.resourceId
         quantity = mint_resource.quantity
-        # _metaData = str(mint_resource.metaData)
         _metaData = json.dumps(mint_resource.metaData, indent=4)
-        # idk how to make it work as json format
 
         ingredients = mint_resource.ingredients
-        # print(resourceId)
-        # print(quantity)
-        # print(_metaData)
-        # print(ingredients)
-
-        # Convert JSON string back to dictionary
-        _metaData_dict = json.loads(_metaData)
-
-        # Iterate over dictionary
-        for key, value in _metaData_dict.items():
-            print(f"Key: {key}, Value: {value}")
 
         transaction = contract.functions.mintRessource(resourceId, quantity, _metaData, ingredients).build_transaction({
             "from": account.address,
@@ -115,39 +101,6 @@ async def mint_resource(mint_resource: MintRessource):
 
 @router.post("/setMetaData")
 async def set_metadata(data: MetaData):
-
-    # # Get account form private key
-    # account = web3.eth.account.from_key(
-    #     "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
-    
-    # tokenId = data.tokenId
-    # _metaData = json.dumps(data.metaData, indent=4)
-
-    # transaction = contract.functions.setMetaData(tokenId, _metaData).build_transaction({
-    #     "from": account.address,
-    #     'chainId': 1337,
-    #     "gasPrice": web3.eth.gas_price,
-    #     "nonce": web3.eth.get_transaction_count(account.address),
-    # })
-
-    # # Sign the transaction
-    # signed_txn = web3.eth.account.sign_transaction(
-    #     transaction, private_key=account.key)
-
-    # # Send the transaction
-
-    # txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-
-    # # Wait for the transaction to be mined
-    # txn_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
-
-    # # Extract and decode the 'ResourceCreatedEvent' from the transaction receipt
-
-    # resource_metaDataEvent = contract.events.ResourceMetaDataChangedEvent(
-    # ).process_receipt(txn_receipt)
-
-
-    # return {resource_metaDataEvent[0].args}
     return "to implement"
 
 
