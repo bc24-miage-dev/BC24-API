@@ -50,7 +50,7 @@ If you prefer to use Docker for development or deployment, follow these steps to
 
 You can now access the API and its documentation in the same way as running it locally without Docker.
 
-## Deployment to Raspberry Pi
+## Deployment to Raspberry Pin (not yet working, Architecture problems)
 
 To deploy the Docker image to a Raspberry Pi, follow these steps:
 
