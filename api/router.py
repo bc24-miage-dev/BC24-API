@@ -205,10 +205,10 @@ async def get_resource_by_wallet_address_with_optional_metaData(wallet_address: 
 @router.post("/resource/transfer")
 async def transfer_resource(transfer: TransferResourceRequest):
     # Check if the sender s wallet addresses is valid
-    if (not web3.is_address(transfer.wallet_address_owner)):
+    if (not web3.is_address(transfer.from_wallet_address)):
         raise HTTPException(
             status_code=400, detail="Invalid wallet address for the sender")
-    if (not web3.is_address(transfer.wallet_address_receiver)):
+    if (not web3.is_address(transfer.to_wallet_address)):
         raise HTTPException(
             status_code=400, detail="Invalid wallet address for the receiver")
     try:
@@ -232,7 +232,11 @@ async def transfer_resource(transfer: TransferResourceRequest):
         txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
         txn_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
-        return {"status": "success", }
+
+        resource_transferred_events = contract.events.TransferSingle(
+        ).process_receipt(txn_receipt)
+
+        return resource_transferred_events[0].args
     except Exception as e:
         print(e)
         raise HTTPException(
@@ -319,12 +323,15 @@ async def get_event_logs_with_optional_filters(event: str, receiver_address: Opt
 
     logs = all_logs
     if receiver_address:
-        logs = [log for log in logs if log['to'].lower() ==
-                receiver_address.lower()]
+        if logs[0].get('to') != None:
+            logs = [log for log in logs if log['to'].lower() ==
+                    receiver_address.lower()]
     if sender_address:
-        logs = [log for log in logs if log['from'].lower() ==
-                sender_address.lower()]
+        if logs[0].get('from') != None:
+            logs = [log for log in logs if log['from'].lower() ==
+                    sender_address.lower()]
     if tokenId:
-        logs = [log for log in logs if log['id'] == tokenId]
+        if (logs[0].get('id') != None):
+            logs = [log for log in logs if log['id'] == tokenId]
 
     return {"event": event, "data": logs}
