@@ -20,7 +20,7 @@ router = APIRouter()
 
 
 @router.get("/roles")
-async def get_roles():
+async def get_available_roles():
     try:
         resources = contract.functions.getResourceTemplates().call()
         roles = list(set([resource[5] for resource in resources]))
@@ -41,7 +41,7 @@ async def get_role_of_wallet_address(wallet_address: str):
 
 
 @router.post("/roles/assignRole")
-async def assign_role(request: RoleAssignmentRequest):
+async def assign_role_to_user(request: RoleAssignmentRequest):
     if not web3.is_address(request.from_wallet_address):
         raise HTTPException(status_code=400, detail="Invalid wallet address")
     if not web3.is_address(request.target_wallet_address):
@@ -72,7 +72,7 @@ async def assign_role(request: RoleAssignmentRequest):
             status_code=500, detail=f"Failed to send transaction: {e}")
 
 
-@router.get("/resourceTemplates", response_model=List[ResourceTemplateResponse])
+@router.get("/resource/templates", response_model=List[ResourceTemplateResponse])
 async def get_resources_templates(resource_id: Optional[int] = None, required_role: Optional[str] = None):
     try:
         resources = contract.functions.getResourceTemplates().call()
@@ -99,8 +99,8 @@ async def get_resources_templates(resource_id: Optional[int] = None, required_ro
             status_code=500, detail=f"Failed to get resources: {e}")
 
 
-@router.post("/mintResource")
-async def mint_resource(request: MintRessourceRequest):
+@router.post("/resource/mint")
+async def create_resource(request: MintRessourceRequest):
     try:
         account = web3.eth.account.from_key(
             private_key_service.get_private_key(request.from_wallet_address))
@@ -136,76 +136,13 @@ async def mint_resource(request: MintRessourceRequest):
             status_code=500, detail=f"Failed to send transaction: {e}")
 
 
-@router.post("/mintOneToMany")
-async def mint_one_to_many(data: MintToManyDataRequest):
+@router.post("/resource/mintToMany")
+async def create_resource_one_to_many(data: MintToManyDataRequest):
     return "to implement"
 
 
-@router.get("/metadata/{tokenId}")
-async def metadata(tokenId: int):
-    try:
-        enriched_metadata = fetch_and_enrich_metadata(tokenId)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get metadata: {e}")
-
-    return enriched_metadata
-
-
-def fetch_and_enrich_metadata(tokenId):
-    metadata = contract.functions.getMetaData(tokenId).call()
-
-    enriched_ingredients = []
-    ingredients_token_ids = metadata[3]
-
-    if ingredients_token_ids:
-        for ingredient_tokenId in metadata[3]:
-            enriched_ingredient = fetch_and_enrich_metadata(ingredient_tokenId)
-            enriched_ingredients.append(enriched_ingredient)
-
-    return MetaDataResponse(data=metadata[0],
-                            resource_id=metadata[1],
-                            resource_name=metadata[2],
-                            ingredients=enriched_ingredients)
-
-
-@router.post("/metadata")
-async def set_metadata(request: MetaDataRequest):
-    if not web3.is_address(request.from_wallet_address):
-        raise HTTPException(status_code=400, detail="Invalid wallet address")
-    try:
-        account = web3.eth.account.from_key(
-            private_key_service.get_private_key(request.from_wallet_address))
-
-        token_id = request.tokenId
-        meta_data = json.dumps(request.metaData, indent=4)
-
-        transaction = contract.functions.setMetaData(token_id, meta_data).build_transaction({
-            "from": account.address,
-            'chainId': 1337,
-            "gasPrice": web3.eth.gas_price,
-            "nonce": web3.eth.get_transaction_count(account.address),
-        })
-
-        signed_txn = web3.eth.account.sign_transaction(
-            transaction, private_key=account.key)
-
-        txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-
-        txn_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
-
-        resource_metaDataEvent = contract.events.ResourceMetaDataChangedEvent(
-        ).process_receipt(txn_receipt)
-
-        return resource_metaDataEvent[0].args
-    except Exception as e:
-        print(e)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to send transaction: {e}")
-
-
-@router.get("/tokens/{wallet_address}")
-async def get_resources_by_wallet_address(wallet_address: str):
+@router.get("/resource/{wallet_address}")
+async def get_resource_by_wallet_address_with_optional_metaData(wallet_address: str, metaData: Optional[bool] = False):
     if not web3.is_address(wallet_address):
         raise HTTPException(status_code=400, detail="Invalid wallet address")
     try:
@@ -245,14 +182,27 @@ async def get_resources_by_wallet_address(wallet_address: str):
         active_tokens = {token_id: balance for token_id,
                          balance in active_tokens.items() if balance > 0}
 
-        return {"active_tokens for account": active_tokens}
+        active_resources = []
+
+        for token_id in active_tokens:
+            resource = {"tokenId": token_id,
+                        "balance": active_tokens[token_id]}
+            if metaData:
+                enriched_metadata = fetch_and_enrich_metadata(
+                    contract, token_id)
+                resource = {**resource, "metaData": enriched_metadata}
+
+            active_resources.append(resource)
+
+        return active_resources
+
     except Exception as e:
         print(e)
         raise HTTPException(
             status_code=500, detail=f"Failed to send transaction: {e}")
 
 
-@router.post("/transfer")
+@router.post("/resource/transfer")
 async def transfer_resource(transfer: TransferResourceRequest):
     # Check if the sender s wallet addresses is valid
     if (not web3.is_address(transfer.wallet_address_owner)):
@@ -289,18 +239,92 @@ async def transfer_resource(transfer: TransferResourceRequest):
             status_code=500, detail=f"Failed to send transaction: {e}")
 
 
+@router.get("/resource/{tokenId}/metadata")
+async def get_metadata_of_resource(tokenId: int):
+    try:
+        enriched_metadata = fetch_and_enrich_metadata(contract, tokenId)
+
+        return enriched_metadata
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get metadata: {e}")
+
+
+def fetch_and_enrich_metadata(contract, tokenId):
+    metadata = contract.functions.getMetaData(tokenId).call()
+
+    enriched_ingredients = []
+    ingredients_token_ids = metadata[3]
+
+    if ingredients_token_ids:
+        for ingredient_tokenId in metadata[3]:
+            enriched_ingredient = fetch_and_enrich_metadata(
+                contract, ingredient_tokenId)
+            enriched_ingredients.append(enriched_ingredient)
+
+    return MetaDataResponse(data=metadata[0],
+                            resource_id=metadata[1],
+                            resource_name=metadata[2],
+                            ingredients=enriched_ingredients)
+
+
+@router.post("/resource/metadata")
+async def set_metadata(request: MetaDataRequest):
+    if not web3.is_address(request.from_wallet_address):
+        raise HTTPException(status_code=400, detail="Invalid wallet address")
+    try:
+        account = web3.eth.account.from_key(
+            private_key_service.get_private_key(request.from_wallet_address))
+
+        token_id = request.tokenId
+        meta_data = json.dumps(request.metaData, indent=4)
+
+        transaction = contract.functions.setMetaData(token_id, meta_data).build_transaction({
+            "from": account.address,
+            'chainId': 1337,
+            "gasPrice": web3.eth.gas_price,
+            "nonce": web3.eth.get_transaction_count(account.address),
+        })
+
+        signed_txn = web3.eth.account.sign_transaction(
+            transaction, private_key=account.key)
+
+        txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+        txn_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
+
+        resource_metaDataEvent = contract.events.ResourceMetaDataChangedEvent(
+        ).process_receipt(txn_receipt)
+
+        return resource_metaDataEvent[0].args
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to send transaction: {e}")
+
+
 @router.get("/events/{event}")
-async def get_event_logs(event: str):
+async def get_event_logs_with_optional_filters(event: str, receiver_address: Optional[str] = None, sender_address: Optional[str] = None, tokenId: Optional[int] = None):
 
     start_block = 0
     end_block = web3.eth.block_number
     batch_size = 1000
 
-    logs = []
+    all_logs = []
     for block in range(start_block, end_block + 1, batch_size):
         batch_end_block = min(block + batch_size - 1, end_block)
         events = contract.events[event].get_logs(
             fromBlock=block, toBlock=batch_end_block)
-        logs += [event.args for event in events]
+        all_logs += [event.args for event in events]
+
+    logs = all_logs
+    if receiver_address:
+        logs = [log for log in logs if log['to'].lower() ==
+                receiver_address.lower()]
+    if sender_address:
+        logs = [log for log in logs if log['from'].lower() ==
+                sender_address.lower()]
+    if tokenId:
+        logs = [log for log in logs if log['id'] == tokenId]
 
     return {"event": event, "data": logs}
