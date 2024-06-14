@@ -47,8 +47,15 @@ class ResourceTemplateResponse(BaseModel):
     produces_resources_amounts: List[Any]
 
 
+class Data(BaseModel):
+    required_role: str
+    stringData: Any
+    lastModifiedBy: Any
+    lastModifiedAt: int
+
+
 class MetaDataResponse(BaseModel):
-    data: List[Any]
+    data: List[Data]
     resource_id: int
     resource_name: str
     ingredients: List[Any]

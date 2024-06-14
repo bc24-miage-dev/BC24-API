@@ -266,7 +266,13 @@ def fetch_and_enrich_metadata(contract, tokenId):
                 contract, ingredient_tokenId)
             enriched_ingredients.append(enriched_ingredient)
 
-    return MetaDataResponse(data=metadata[0],
+
+    transformed_metaData = [Data(required_role=data[0],
+                                 stringData=json.loads(data[1]),
+                                 lastModifiedBy=data[2],
+                                 lastModifiedAt=data[3]) for data in metadata[0]]
+
+    return MetaDataResponse(data=transformed_metaData,
                             resource_id=metadata[1],
                             resource_name=metadata[2],
                             ingredients=enriched_ingredients)
