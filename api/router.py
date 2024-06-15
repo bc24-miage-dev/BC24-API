@@ -87,6 +87,7 @@ async def get_resources_templates(resource_id: Optional[int] = None, required_ro
                 required_role=resource[5],
                 produces_resources=resource[6],
                 produces_resources_amounts=resource[7],
+                resource_type=resource[8]
             )
             for resource in resources
             if (resource_id is None or resource[0] == resource_id) and (required_role is None or resource[5] == required_role)
@@ -163,7 +164,8 @@ async def create_resource_one_to_many(request: MintOneToManyRessourceRequest):
         resource_created_events = contract.events.ResourceCreatedEvent(
         ).process_receipt(txn_receipt)
 
-        return_events = [transaction_event.args for transaction_event in resource_created_events]
+        return_events = [
+            transaction_event.args for transaction_event in resource_created_events]
 
         return return_events
 

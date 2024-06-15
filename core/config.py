@@ -1,8 +1,13 @@
 import json
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 
 class GlobalConfig:  
+
+    
+    load_dotenv()
     def __init__(self):  
         pass  
   
@@ -21,8 +26,8 @@ class ContractConfig:
     def __init__(self):  
         pass  
     
-    validator_address: str = "https://validator3.rpc.bc24.miage.dev"
-    contract_address: str = "0x42699A7612A82f1d9C36148af9C77354759b210b"
+    validator_address: str = os.getenv("VALIDATOR_URL")
+    contract_address: str = os.getenv("CONTRACT_ADDRESS")
     contract_abi = json.load((Path(__file__).parent / "abi.json").open())
   
 contract_settings = ContractConfig()

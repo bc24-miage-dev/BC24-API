@@ -51,6 +51,8 @@ class ResourceTemplateResponse(BaseModel):
     required_role: str
     produces_resources: List[Any]
     produces_resources_amounts: List[Any]
+    resource_type: str
+    
 
 
 class Data(BaseModel):
