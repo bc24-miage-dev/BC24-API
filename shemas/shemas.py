@@ -18,6 +18,12 @@ class MintRessourceRequest(BaseModel):
     ingredients: list[int]
 
 
+class MintOneToManyRessourceRequest(BaseModel):
+    from_wallet_address: str
+    producer_token_id: int
+    metaData: dict
+
+
 class MetaDataRequest(BaseModel):
     from_wallet_address: str
     tokenId: int

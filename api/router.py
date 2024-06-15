@@ -137,8 +137,40 @@ async def create_resource(request: MintRessourceRequest):
 
 
 @router.post("/resource/mintToMany")
-async def create_resource_one_to_many(data: MintToManyDataRequest):
-    return "to implement"
+async def create_resource_one_to_many(request: MintOneToManyRessourceRequest):
+    try:
+        account = web3.eth.account.from_key(
+            private_key_service.get_private_key(request.from_wallet_address))
+
+        producer_token_id = request.producer_token_id
+
+        meta_data = json.dumps(request.metaData, indent=4)
+
+        transaction = contract.functions.mintOneToMany(producer_token_id, meta_data).build_transaction({
+            "from": account.address,
+            'chainId': 1337,
+            "gasPrice": web3.eth.gas_price,
+            "nonce": web3.eth.get_transaction_count(account.address),
+        })
+
+        signed_txn = web3.eth.account.sign_transaction(
+            transaction, private_key=account.key)
+
+        txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+        txn_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
+
+        resource_created_events = contract.events.ResourceCreatedEvent(
+        ).process_receipt(txn_receipt)
+
+        return_events = [transaction_event.args for transaction_event in resource_created_events]
+
+        return return_events
+
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to send transaction: {e}")
 
 
 @router.get("/resource/{wallet_address}")
@@ -265,7 +297,6 @@ def fetch_and_enrich_metadata(contract, tokenId):
             enriched_ingredient = fetch_and_enrich_metadata(
                 contract, ingredient_tokenId)
             enriched_ingredients.append(enriched_ingredient)
-
 
     transformed_metaData = [Data(required_role=data[0],
                                  stringData=json.loads(data[1]),
