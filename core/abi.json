@@ -290,6 +290,11 @@
             "type": "string"
           },
           {
+            "internalType": "string",
+            "name": "ressourceType",
+            "type": "string"
+          },
+          {
             "internalType": "uint256[]",
             "name": "ingredients",
             "type": "uint256[]"
@@ -648,6 +653,11 @@
             "type": "string"
           },
           {
+            "internalType": "string",
+            "name": "ressourceType",
+            "type": "string"
+          },
+          {
             "internalType": "uint256[]",
             "name": "ingredients",
             "type": "uint256[]"
@@ -842,6 +852,11 @@
       {
         "internalType": "string",
         "name": "ressourceName",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "ressourceType",
         "type": "string"
       }
     ],

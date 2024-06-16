@@ -66,4 +66,5 @@ class MetaDataResponse(BaseModel):
     data: List[Data]
     resource_id: int
     resource_name: str
+    resource_type: str
     ingredients: List[Any]

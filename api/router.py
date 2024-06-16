@@ -291,11 +291,16 @@ async def get_metadata_of_resource(tokenId: int):
 def fetch_and_enrich_metadata(contract, tokenId):
     metadata = contract.functions.getMetaData(tokenId).call()
 
+    resource_metaData = metadata[0]
+    resource_id=metadata[1]
+    resource_name=metadata[2]
+    resource_type=metadata[3]
+    ingredients_token_ids = metadata[4]
+
     enriched_ingredients = []
-    ingredients_token_ids = metadata[3]
 
     if ingredients_token_ids:
-        for ingredient_tokenId in metadata[3]:
+        for ingredient_tokenId in ingredients_token_ids:
             enriched_ingredient = fetch_and_enrich_metadata(
                 contract, ingredient_tokenId)
             enriched_ingredients.append(enriched_ingredient)
@@ -303,11 +308,12 @@ def fetch_and_enrich_metadata(contract, tokenId):
     transformed_metaData = [Data(required_role=data[0],
                                  stringData=json.loads(data[1]),
                                  lastModifiedBy=data[2],
-                                 lastModifiedAt=data[3]) for data in metadata[0]]
+                                 lastModifiedAt=data[3]) for data in resource_metaData]
 
     return MetaDataResponse(data=transformed_metaData,
-                            resource_id=metadata[1],
-                            resource_name=metadata[2],
+                            resource_id=resource_id,
+                            resource_name=resource_name,
+                            resource_type=resource_type,
                             ingredients=enriched_ingredients)
 
 
