@@ -176,7 +176,7 @@ async def create_resource_one_to_many(request: MintOneToManyRessourceRequest):
 
 
 @router.get("/resource/{wallet_address}")
-async def get_resource_by_wallet_address_with_optional_metaData(wallet_address: str, metaData: Optional[bool] = False):
+async def get_resource_by_wallet_address_with_optional_metaData(wallet_address: str, metaData: Optional[bool] = False, recursive: Optional[bool] = False):
     if not web3.is_address(wallet_address):
         raise HTTPException(status_code=400, detail="Invalid wallet address")
     try:
@@ -223,7 +223,7 @@ async def get_resource_by_wallet_address_with_optional_metaData(wallet_address: 
                         "balance": active_tokens[token_id]}
             if metaData:
                 enriched_metadata = fetch_and_enrich_metadata(
-                    contract, token_id)
+                    contract, token_id, recursive)
                 resource = {**resource, "metaData": enriched_metadata}
 
             active_resources.append(resource)
@@ -278,9 +278,10 @@ async def transfer_resource(transfer: TransferResourceRequest):
 
 
 @router.get("/resource/{tokenId}/metadata")
-async def get_metadata_of_resource(tokenId: int):
+async def get_metadata_of_resource(tokenId: int, recursive: Optional[bool] = False):
     try:
-        enriched_metadata = fetch_and_enrich_metadata(contract, tokenId)
+        enriched_metadata = fetch_and_enrich_metadata(
+            contract, tokenId, recursive)
 
         return enriched_metadata
     except Exception as e:
@@ -288,22 +289,24 @@ async def get_metadata_of_resource(tokenId: int):
             status_code=500, detail=f"Failed to get metadata: {e}")
 
 
-def fetch_and_enrich_metadata(contract, tokenId):
+def fetch_and_enrich_metadata(contract, tokenId, recursive=True):
     metadata = contract.functions.getMetaData(tokenId).call()
 
     resource_metaData = metadata[0]
-    resource_id=metadata[1]
-    resource_name=metadata[2]
-    resource_type=metadata[3]
+    resource_id = metadata[1]
+    resource_name = metadata[2]
+    resource_type = metadata[3]
     ingredients_token_ids = metadata[4]
 
     enriched_ingredients = []
 
-    if ingredients_token_ids:
+    if recursive:
         for ingredient_tokenId in ingredients_token_ids:
             enriched_ingredient = fetch_and_enrich_metadata(
                 contract, ingredient_tokenId)
             enriched_ingredients.append(enriched_ingredient)
+    else:
+        enriched_ingredients = ingredients_token_ids
 
     transformed_metaData = [Data(required_role=data[0],
                                  stringData=json.loads(data[1]),
