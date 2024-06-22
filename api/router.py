@@ -18,6 +18,13 @@ private_key_service = PrivateKeyService()
 
 router = APIRouter()
 
+@router.get("/wallet/create")
+async def create_wallet():
+    acc = web3.eth.account.create()
+    private_key_service.add_private_key(acc.address, web3.to_hex(acc.key))
+    
+    return {"private_key": web3.to_hex(acc.key), "address": acc.address}
+
 
 @router.get("/roles")
 async def get_available_roles():
