@@ -74,7 +74,7 @@ class MetaDataResponse(BaseModel):
 
 
 class ResourceCreatedEventResponse(BaseModel):
-    tokenId:str
+    tokenId:int
     ressourceName:str
     message:str
     caller:str
