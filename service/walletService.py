@@ -1,23 +1,21 @@
 import os
 from dotenv import load_dotenv
-
+import re
 
 class PrivateKeyService:
     def __init__(self):
         # Load environment variables from .env file
         load_dotenv()
 
-        # Initialize a dictionary to store private keys loaded from environment variables
-        self.private_keys = {
-            "0xFE3B557E8Fb62b89F4916B721be55cEb828dBd73": os.getenv("0xFE3B557E8Fb62b89F4916B721be55cEb828dBd73"),
-            "0x2DFc6e58d8a388cE38b5413ca2458a7b59d1B844": os.getenv("0x2DFc6e58d8a388cE38b5413ca2458a7b59d1B844"),
-            "0x9F6C344071C0FDf43132eEfA8309a770A063D82D": os.getenv("0x9F6C344071C0FDf43132eEfA8309a770A063D82D"),
-            "0x0b97F7B3FC38bF1DFf740d65B582c61b3E84FfC6": os.getenv("0x0b97F7B3FC38bF1DFf740d65B582c61b3E84FfC6"),
-            "0x03B950EC5b1D893CDEB5d9A8A9165FeC3eF7914e": os.getenv("0x03B950EC5b1D893CDEB5d9A8A9165FeC3eF7914e"),
-            "0x3DEFCA6A535B57570505952a9f0aA59F83ac0125": os.getenv("0x3DEFCA6A535B57570505952a9f0aA59F83ac0125"),
-            "0x9AC65C5FF92e9C52fA342fA9D8e681637A4C80e0": os.getenv("0x9AC65C5FF92e9C52fA342fA9D8e681637A4C80e0"),
-            "0x63F3D8fA9Bad9E6f6177530F18dA0500088eD087": os.getenv("0x63F3D8fA9Bad9E6f6177530F18dA0500088eD087"),
-        }
+        with open('.env', 'r') as file:
+            content = file.read()
+
+        addresses = re.findall(r'0x[a-fA-F0-9]{40}', content)
+
+        self.private_keys = {}
+        for address in addresses:
+            if address not in self.private_keys:
+                self.private_keys[address] = os.getenv(address)
 
     def get_private_key(self, wallet_address: str):
         # Check if the private key is in the list
@@ -25,3 +23,12 @@ class PrivateKeyService:
             return self.private_keys[wallet_address]
         else:
             raise Exception("Wallet address not found")
+        
+    
+    def add_private_key(self,account, key):
+        self.private_keys[account] = key
+        with open('.env', 'a') as env_file:
+            # Format the string to be written
+            env_entry = f"{account}={key}\n"
+            # Write the formatted string to the .env file
+            env_file.write(env_entry)

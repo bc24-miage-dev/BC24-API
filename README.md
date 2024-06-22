@@ -2,8 +2,15 @@
 
 This is the API for the BC24 Traceability project.
 
-## Local Development
+## Development
 
+### env variables
+Copy the `.env-template` and rename it to `.env`
+Provide a validator url as well as the address of the deployed contract. 
+
+Additionally provide wallet addresses and private keys of the users that will be using the api
+
+### Run 
 Follow these steps to launch the API locally:
 
 1. Ensure you have Python 3.11 installed. You can download it from [here](https://www.python.org/downloads/).
@@ -28,36 +35,16 @@ Follow these steps to launch the API locally:
 
 The server will start on `http://localhost:8000`. You can view the API documentation at `http://localhost:8000/docs`.
 
-### Running with Docker
 
-If you prefer to use Docker for development or deployment, follow these steps to build and run your application inside a Docker container.
+## Load Testing
+We use locust to do stress and load testing for the API and respectively for the underlying BC. 
 
-1. Build the Docker image:
-
+1. Make sure the api is running at `http://localhost:8000`
+2. Run the locust service
    ```bash
-   docker build -t bc24-api .
-   ```
+      locust -f .\tests\stressTest.py
+   ``` 
+3. Navigate to `http://localhost:8089` 
+4. Select a number of users, the time it takes to add a new user and provide the host (`http://localhost:8000`)
+5. Run the tests and observe the results
 
-   This command builds a Docker image named `bc24-api` from the Dockerfile in the current directory.
-
-2. Run the Docker container:
-
-   ```bash
-   docker run -d --name bc24-api-container -p 8000:8000 bc24-api
-   ```
-
-   This command runs the `bc24-api` image in a container named `bc24-api-container`. It also maps port 8000 of the container to port 8000 on the host, allowing you to access the API at `http://localhost:8000`.
-
-You can now access the API and its documentation in the same way as running it locally without Docker.
-
-# Stress Tests
-
-MAKE SURE YOU KNOW WHAT YOU ARE DOING. THIS WILL LAUNCH THE TESTS ON THE CURRENT CONTRACT MENTIONED IN .ENV FILE AND WILL POTENTIALLY MESS UP THE CURRENT STATE OF THE BLOCKCHAIN! 
-
-YOU HAVE BEEN WARNED.
-
-```
- locust -f .\tests\stressTest.py
-```
-
-Navigate to the localhost site and start the tests with appropriate arguments.
