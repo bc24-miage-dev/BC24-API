@@ -23,7 +23,7 @@ async def create_wallet():
     acc = web3.eth.account.create()
     private_key_service.add_private_key(acc.address, web3.to_hex(acc.key))
     
-    return {"private_key": web3.to_hex(acc.key), "address": acc.address}
+    return {"address": acc.address}
 
 
 @router.get("/roles")
