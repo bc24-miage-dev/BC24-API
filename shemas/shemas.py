@@ -1,6 +1,5 @@
-
 import json
-from typing import Any, List
+from typing import Any, List, Optional
 from pydantic import BaseModel
 
 
@@ -52,7 +51,6 @@ class ResourceTemplateResponse(BaseModel):
     produces_resources: List[Any]
     produces_resources_amounts: List[Any]
     resource_type: str
-    
 
 
 class Data(BaseModel):
@@ -62,9 +60,38 @@ class Data(BaseModel):
     lastModifiedAt: int
 
 
-class MetaDataResponse(BaseModel):
+class MetaData(BaseModel):
     data: List[Data]
     resource_id: int
     resource_name: str
     resource_type: str
     ingredients: List[Any]
+
+class MetaDataResponse(BaseModel):
+    tokenId: int
+    balance: int
+    metaData: Optional[MetaData] = None
+
+
+class ResourceCreatedEventResponse(BaseModel):
+    tokenId:str
+    ressourceName:str
+    message:str
+    caller:str
+
+
+class CreateWalletResponse(BaseModel):
+    wallet_address: str
+
+class RoleResponse(BaseModel):
+    role: str
+
+
+class EventResponse(BaseModel):
+    event: str
+    data: List[dict]
+
+class ResourceMetaDataChangedEventResponse(BaseModel):
+    tokenId: int
+    metaData: dict
+    caller: str
