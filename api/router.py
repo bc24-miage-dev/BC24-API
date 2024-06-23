@@ -39,7 +39,7 @@ async def send_eth(transaction_request: TransactionRequest):
     sender_address = transaction_request.sender_address
     receiver_address = transaction_request.receiver_address
     amount_in_ether = transaction_request.amount
-    amount_in_wei = web3.to_wei(amount_in_ether, 'ether')
+    amount_in_wei = web3.to_wei(amount_in_ether, "ether")
 
     # Retrieve the private key securely
     try:
@@ -50,11 +50,11 @@ async def send_eth(transaction_request: TransactionRequest):
     # Build and sign the transaction
     nonce = web3.eth.get_transaction_count(sender_address)
     txn = {
-        'nonce': nonce,
-        'to': receiver_address,
-        'value': amount_in_wei,
-        'gas': 2000000,
-        'gasPrice': web3.to_wei('50', 'gwei'),
+        "nonce": nonce,
+        "to": receiver_address,
+        "value": amount_in_wei,
+        "gas": 2000000,
+        "gasPrice": web3.to_wei("50", "gwei"),
     }
     signed_txn = web3.eth.account.sign_transaction(txn, private_key)
 
@@ -467,7 +467,7 @@ async def set_metadata(request: MetaDataRequest):
         raise HTTPException(status_code=500, detail=f"Failed to send transaction: {e}")
 
 
-@router.get("/events/{event}", response_model=EventResponse)
+@router.get("/events/{event}")
 async def get_event_logs_with_optional_filters(
     event: str,
     receiver_address: Optional[str] = None,
@@ -487,6 +487,7 @@ async def get_event_logs_with_optional_filters(
         )
         all_logs += [event.args for event in events]
 
+
     logs = all_logs
     if receiver_address:
         if logs[0].get("to") != None:
@@ -498,10 +499,24 @@ async def get_event_logs_with_optional_filters(
             logs = [
                 log for log in logs if log["from"].lower() == sender_address.lower()
             ]
+        if logs[0].get("caller") != None:
+            logs = [
+                log for log in logs if log["caller"].lower() == sender_address.lower()
+            ]
     if tokenId:
         if logs[0].get("id") != None:
             logs = [log for log in logs if log["id"] == tokenId]
+        if logs[0].get("tokenId") != None:
+            logs = [log for log in logs if log["tokenId"] == tokenId]
 
-    return_object = EventResponse(event=event, data=logs)
+    return {"event": event, "data": logs}
 
-    return return_object
+
+from collections.abc import Mapping
+
+
+def attribute_dict_to_dict(input_dict):
+    if isinstance(input_dict, Mapping):
+        return {k: attribute_dict_to_dict(v) for k, v in input_dict.items()}
+    else:
+        return input_dict
