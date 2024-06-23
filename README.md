@@ -36,6 +36,14 @@ Follow these steps to launch the API locally:
 The server will start on `http://localhost:8000`. You can view the API documentation at `http://localhost:8000/docs`.
 
 
+**NOTE**: 
+ Make sure to run the project with the following command on the Pi so it can communicate with the [Trace_connect webapplication](https://github.com/bc24-miage-dev/BC24-Trace_Connect/blob/master/README.md) 
+ 
+   ```bash
+   uvicorn main:app —port 8080 --reload 
+   ```
+
+
 ## Load Testing
 We use locust to do stress and load testing for the API and respectively for the underlying BC. 
 
