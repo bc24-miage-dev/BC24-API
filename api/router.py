@@ -28,10 +28,10 @@ async def create_wallet():
     return {"wallet_address": acc.address}
 
 
-@router.get("/wallet/static", response_model=str)
+@router.get("/wallet/static", response_model=CreateWalletResponse)
 async def create_wallet():
 
-    return {"address": "0x0b97F7B3FC38bF1DFf740d65B582c61b3E84FfC6"}
+    return {"wallet_address": "0x0b97F7B3FC38bF1DFf740d65B582c61b3E84FfC6"}
 
 
 @router.get("/roles", response_model=List[str])
