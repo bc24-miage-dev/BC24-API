@@ -67,6 +67,7 @@ class MetaData(BaseModel):
     resource_type: str
     ingredients: List[Any]
 
+
 class MetaDataResponse(BaseModel):
     tokenId: int
     balance: int
@@ -74,14 +75,15 @@ class MetaDataResponse(BaseModel):
 
 
 class ResourceCreatedEventResponse(BaseModel):
-    tokenId:int
-    ressourceName:str
-    message:str
-    caller:str
+    tokenId: int
+    ressourceName: str
+    message: str
+    caller: str
 
 
 class CreateWalletResponse(BaseModel):
     wallet_address: str
+
 
 class RoleResponse(BaseModel):
     role: str
@@ -91,7 +93,19 @@ class EventResponse(BaseModel):
     event: str
     data: List[dict]
 
+
 class ResourceMetaDataChangedEventResponse(BaseModel):
     tokenId: int
     metaData: dict
     caller: str
+
+
+class TransactionRequest(BaseModel):
+    sender_address: str
+    receiver_address: str
+    amount: float  # Amount in Ether
+
+
+class TransactionResponse(BaseModel):
+    transaction_hash: str
+    details: str
