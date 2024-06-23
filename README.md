@@ -1,6 +1,7 @@
-# BC24-API
+# BC24-API: Blockchain API
 
-This is the API for the BC24 Traceability project.
+## Presentation
+This project is the API for communicating with the BC24 Traceability project, our food traceability blockchain specialized in meet.
 
 ## Development
 
