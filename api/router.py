@@ -321,7 +321,7 @@ async def get_resource_by_wallet_address_with_optional_metaData(
         raise HTTPException(status_code=500, detail=f"Failed to send transaction: {e}")
 
 
-@router.post("/resource/transfer")
+@router.post("/resource/transfer", response_model=TransferResourceResponse)
 async def transfer_resource(transfer: TransferResourceRequest):
     # Check if the sender s wallet addresses is valid
     if not web3.is_address(transfer.from_wallet_address):
@@ -363,8 +363,22 @@ async def transfer_resource(transfer: TransferResourceRequest):
         resource_transferred_events = contract.events.TransferSingle().process_receipt(
             txn_receipt
         )
+        event = resource_transferred_events[0]
+        event_args = event["args"]
 
-        return resource_transferred_events[0].args
+        from_address = event_args["from"]
+        to_address = event_args["to"]
+        token_id = event_args["id"]
+        value = event_args["value"]
+
+        return_object = TransferResourceResponse(
+            tokenId=token_id,
+            quantity=value,
+            from_wallet_address=from_address,
+            to_wallet_address=to_address,
+        )
+
+        return return_object
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=f"Failed to send transaction: {e}")
@@ -454,10 +468,34 @@ async def set_metadata(request: MetaDataRequest):
             contract.events.ResourceMetaDataChangedEvent().process_receipt(txn_receipt)
         )
 
+        metadata = resource_metaDataEvent[0].args.metaData
+        resource_metaData = metadata.data
+        resource_id = metadata.resourceId
+        resource_name = metadata.ressourceName
+        resource_type = metadata.ressourceType
+        ingredients_token_ids = metadata.ingredients
+
+        transformed_metaData = [
+            Data(
+                required_role=data.required_role,
+                stringData=json.loads(data.dataString),
+                lastModifiedBy=data.lastModifiedBy,
+                lastModifiedAt=data.lastModifiedAt,
+            )
+            for data in resource_metaData
+        ]
+        
+        return_metaData = MetaData(
+            data=transformed_metaData,
+            resource_id=resource_id,
+            resource_name=resource_name,
+            resource_type=resource_type,
+            ingredients=ingredients_token_ids,
+        )
+
         return_object = ResourceMetaDataChangedEventResponse(
             tokenId=resource_metaDataEvent[0].args.tokenId,
-            ressourceName=resource_metaDataEvent[0].args.ressourceName,
-            message=resource_metaDataEvent[0].args.message,
+            metaData=return_metaData,
             caller=resource_metaDataEvent[0].args.caller,
         )
 
@@ -486,7 +524,6 @@ async def get_event_logs_with_optional_filters(
             fromBlock=block, toBlock=batch_end_block
         )
         all_logs += [event.args for event in events]
-
 
     logs = all_logs
     if receiver_address:
