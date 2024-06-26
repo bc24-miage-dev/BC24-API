@@ -468,6 +468,12 @@ async def set_metadata(request: MetaDataRequest):
             contract.events.ResourceMetaDataChangedEvent().process_receipt(txn_receipt)
         )
 
+        if len(resource_metaDataEvent) == 0:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Youe have been sending too many requests. Please give the network some time to process the previous requests.",
+            )
+
         metadata = resource_metaDataEvent[0].args.metaData
         resource_metaData = metadata.data
         resource_id = metadata.resourceId
@@ -484,7 +490,7 @@ async def set_metadata(request: MetaDataRequest):
             )
             for data in resource_metaData
         ]
-        
+
         return_metaData = MetaData(
             data=transformed_metaData,
             resource_id=resource_id,
@@ -500,6 +506,8 @@ async def set_metadata(request: MetaDataRequest):
         )
 
         return return_object
+    except HTTPException as http_exc:
+        raise http_exc
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=f"Failed to send transaction: {e}")
