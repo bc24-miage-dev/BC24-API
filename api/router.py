@@ -433,10 +433,18 @@ def fetch_and_enrich_metadata(contract, tokenId, recursive=True):
     )
 
 
-@router.post("/resource/metadata", response_model=ResourceMetaDataChangedEventResponse)
+@router.post(
+    "/resource/metadata",
+    response_model=ResourceMetaDataChangedEventResponse,
+    summary="Create Resource Metadata",
+    description="Creates a new resource metadata entry.",
+    responses={
+        429: {"description": "Too Many Requests - Rate limit exceeded."},
+    },
+)
 async def set_metadata(request: MetaDataRequest):
     if not web3.is_address(request.from_wallet_address):
-        raise HTTPException(status_code=400, detail="Invalid wallet address")
+        raise HTTPException(status_code=400, detail="Wallet address is invalid.")
     try:
         account = web3.eth.account.from_key(
             private_key_service.get_private_key(request.from_wallet_address)
@@ -471,7 +479,7 @@ async def set_metadata(request: MetaDataRequest):
         if len(resource_metaDataEvent) == 0:
             raise HTTPException(
                 status_code=429,
-                detail=f"Youe have been sending too many requests. Please give the network some time to process the previous requests.",
+                detail=f"Too Many Requests - Rate limit exceeded.",
             )
 
         metadata = resource_metaDataEvent[0].args.metaData
@@ -555,13 +563,3 @@ async def get_event_logs_with_optional_filters(
             logs = [log for log in logs if log["tokenId"] == tokenId]
 
     return {"event": event, "data": logs}
-
-
-from collections.abc import Mapping
-
-
-def attribute_dict_to_dict(input_dict):
-    if isinstance(input_dict, Mapping):
-        return {k: attribute_dict_to_dict(v) for k, v in input_dict.items()}
-    else:
-        return input_dict
