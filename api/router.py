@@ -406,6 +406,24 @@ async def get_metadata_of_resource(tokenId: int, recursive: Optional[bool] = Fal
     try:
         enriched_metadata = fetch_and_enrich_metadata(contract, tokenId, recursive)
 
+        # Fetch the last transfer event to get the current owner
+        start_block = 0
+        end_block = web3.eth.block_number
+        batch_size = 1000
+
+        all_logs = []
+        for block in range(start_block, end_block + 1, batch_size):
+            batch_end_block = min(block + batch_size - 1, end_block)
+            events = contract.events.TransferSingle.get_logs(
+                fromBlock=block, toBlock=batch_end_block
+            )
+            all_logs += [event.args for event in events]
+
+        token_logs = [log for log in all_logs if log["id"] == tokenId]
+        last_transfer_event = token_logs[-1]
+        
+        enriched_metadata.current_owner = last_transfer_event["to"]
+
         return enriched_metadata
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get metadata: {e}")
@@ -517,6 +535,7 @@ async def set_metadata(request: MetaDataRequest):
         ]
 
         return_metaData = MetaData(
+            owner=request.from_wallet_address,
             data=transformed_metaData,
             resource_id=resource_id,
             resource_name=resource_name,
