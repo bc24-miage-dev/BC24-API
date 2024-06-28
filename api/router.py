@@ -15,7 +15,9 @@ from shemas.MetaDataResponse import MetaDataResponse
 from shemas.MintOneToManyRessourceRequest import MintOneToManyRessourceRequest
 from shemas.MintRessourceRequest import MintRessourceRequest
 from shemas.ResourceCreatedEventResponse import ResourceCreatedEventResponse
-from shemas.ResourceMetaDataChangedEventResponse import ResourceMetaDataChangedEventResponse
+from shemas.ResourceMetaDataChangedEventResponse import (
+    ResourceMetaDataChangedEventResponse,
+)
 from shemas.ResourceTemplateResponse import ResourceTemplateResponse
 from shemas.RoleAssignmentRequest import RoleAssignmentRequest
 from shemas.RoleResponse import RoleResponse
@@ -421,8 +423,12 @@ async def get_metadata_of_resource(tokenId: int, recursive: Optional[bool] = Fal
 
         token_logs = [log for log in all_logs if log["id"] == tokenId]
         last_transfer_event = token_logs[-1]
-        
+
         enriched_metadata.current_owner = last_transfer_event["to"]
+
+        enriched_metadata.quantity = contract.functions.balanceOf(
+            last_transfer_event["to"], tokenId
+        ).call()
 
         return enriched_metadata
     except Exception as e:
