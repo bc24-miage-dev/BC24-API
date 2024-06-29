@@ -7,8 +7,7 @@ from shemas.RoleAssignmentRequest import RoleAssignmentRequest
 from shemas.RoleResponse import RoleResponse
 
 blockchainSerivce = BlockchainService()
-web3 = blockchainSerivce.web3
-contract = blockchainSerivce.contract
+
 
 private_key_service = PrivateKeyService()
 
@@ -47,14 +46,12 @@ async def get_role_of_wallet_address(wallet_address: str):
 @router.post("/assignRole")
 async def assign_role_to_user(request: RoleAssignmentRequest):
     try:
-
-        admin_account = web3.eth.account.from_key(
-            private_key_service.get_private_key(request.from_wallet_address)
+        from_wallet_private_key = private_key_service.get_private_key(
+            request.from_wallet_address
         )
-
         receit = (
             blockchainSerivce.assign_role_to_user(
-                from_wallet=admin_account,
+                from_wallet_private_key=from_wallet_private_key,
                 target_wallet_address=request.target_wallet_address,
                 role=request.role,
             ),

@@ -43,7 +43,8 @@ class BlockchainService:
         roles = self.contract.functions.userRoles(wallet_address).call()
         return roles
 
-    def assign_role_to_user(self, from_wallet, target_wallet_address, role):
+    def assign_role_to_user(self, from_wallet_private_key, target_wallet_address, role):
+        from_wallet = self.web3.eth.account.from_key(from_wallet_private_key)
         if not self.web3.is_address(from_wallet.address):
             raise Exception("Invalid wallet address")
         if not self.web3.is_address(target_wallet_address):
