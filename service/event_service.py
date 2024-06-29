@@ -1,0 +1,24 @@
+from service.blockchain_service import BlockchainService
+
+
+class EventService:
+
+    def __init__(self):
+        self.blockchainService = BlockchainService()
+        self.web3 = self.blockchainService.get_web3()
+        self.contract = self.blockchainService.get_contract()
+
+    def get_events(self, event):
+        start_block = 0
+        end_block = self.web3.eth.block_number
+        batch_size = 1000
+
+        all_logs = []
+        for block in range(start_block, end_block + 1, batch_size):
+            batch_end_block = min(block + batch_size - 1, end_block)
+            events = self.contract.events[event].get_logs(
+                fromBlock=block, toBlock=batch_end_block
+            )
+            all_logs += [event.args for event in events]
+
+        return all_logs

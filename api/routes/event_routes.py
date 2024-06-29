@@ -1,10 +1,9 @@
 from typing import Optional
 from fastapi import APIRouter
-from service.blockchain_service import BlockchainService
-from service.private_key_service import PrivateKeyService
+from service.event_service import EventService
 
 
-blockchainSerivce = BlockchainService()
+eventService = EventService()
 
 router = APIRouter(
     prefix="/events",
@@ -18,7 +17,7 @@ async def get_single_transfer_events(
     sender_address: Optional[str] = None,
     tokenId: Optional[int] = None,
 ):
-    logs = blockchainSerivce.get_events("TransferSingle")
+    logs = eventService.get_events("TransferSingle")
 
     if receiver_address:
         logs = [log for log in logs if log["to"].lower() == receiver_address.lower()]
@@ -35,7 +34,7 @@ async def get_creation_events(
     receiver_address: Optional[str] = None,
     tokenId: Optional[int] = None,
 ):
-    logs = blockchainSerivce.get_events("TransferSingle")
+    logs = eventService.get_events("TransferSingle")
     logs = [
         log
         for log in logs
@@ -55,7 +54,7 @@ async def get_burnt_events(
     sender_address: Optional[str] = None,
     tokenId: Optional[int] = None,
 ):
-    logs = blockchainSerivce.get_events("TransferSingle")
+    logs = eventService.get_events("TransferSingle")
     logs = [
         log
         for log in logs
@@ -75,7 +74,7 @@ async def get_metadata_changed_events(
     caller_address: Optional[str] = None,
     tokenId: Optional[int] = None,
 ):
-    logs = blockchainSerivce.get_events("ResourceMetaDataChangedEvent")
+    logs = eventService.get_events("ResourceMetaDataChangedEvent")
 
     if caller_address:
         logs = [log for log in logs if log["caller"].lower() == caller_address.lower()]
@@ -90,7 +89,7 @@ async def get_created_events(
     caller_address: Optional[str] = None,
     tokenId: Optional[int] = None,
 ):
-    logs = blockchainSerivce.get_events("ResourceCreatedEvent")
+    logs = eventService.get_events("ResourceCreatedEvent")
 
     if caller_address:
         logs = [log for log in logs if log["caller"].lower() == caller_address.lower()]

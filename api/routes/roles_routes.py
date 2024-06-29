@@ -3,12 +3,12 @@ from fastapi import APIRouter, HTTPException
 
 from service.blockchain_service import BlockchainService
 from service.private_key_service import PrivateKeyService
+from service.role_service import RoleService
 from shemas.RoleAssignmentRequest import RoleAssignmentRequest
 from shemas.RoleResponse import RoleResponse
 
-blockchainSerivce = BlockchainService()
 
-
+roleService = RoleService()
 private_key_service = PrivateKeyService()
 
 router = APIRouter(
@@ -20,7 +20,7 @@ router = APIRouter(
 @router.get("/", response_model=List[str])
 async def get_available_roles():
     try:
-        return blockchainSerivce.get_available_roles()
+        return roleService.get_available_roles()
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
@@ -33,7 +33,7 @@ async def get_available_roles():
 )
 async def get_role_of_wallet_address(wallet_address: str):
     try:
-        roles = blockchainSerivce.get_role_of(wallet_address)
+        roles = roleService.get_role_of(wallet_address)
         return {"role": roles}
     except Exception as e:
         print(e)
@@ -50,7 +50,7 @@ async def assign_role_to_user(request: RoleAssignmentRequest):
             request.from_wallet_address
         )
         receit = (
-            blockchainSerivce.assign_role_to_user(
+            roleService.assign_role_to_user(
                 from_wallet_private_key=from_wallet_private_key,
                 target_wallet_address=request.target_wallet_address,
                 role=request.role,

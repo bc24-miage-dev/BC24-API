@@ -2,13 +2,12 @@ from fastapi import APIRouter, HTTPException
 
 from service.blockchain_service import BlockchainService
 from service.private_key_service import PrivateKeyService
+from service.wallet_service import WalletService
 from shemas.CreateWalletResponse import CreateWalletResponse
 from shemas.TransactionRequest import TransactionRequest
 from shemas.TransactionResponse import TransactionResponse
 
-blockchainSerivce = BlockchainService()
-web3 = blockchainSerivce.web3
-
+wallet_service = WalletService()
 private_key_service = PrivateKeyService()
 
 router = APIRouter(
@@ -20,9 +19,9 @@ router = APIRouter(
 @router.get("/create", response_model=CreateWalletResponse)
 async def create_wallet():
     try:
-        acc = blockchainSerivce.create_wallet()
-        private_key_service.add_private_key(acc.address, web3.to_hex(acc.key))
-        return CreateWalletResponse(wallet_address=acc.address)
+        wallet_address, wallet_key = wallet_service.create_wallet()
+        private_key_service.add_private_key(wallet_address, wallet_key)
+        return CreateWalletResponse(wallet_address=wallet_address)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -30,7 +29,9 @@ async def create_wallet():
 @router.get("/static", response_model=CreateWalletResponse)
 async def create_wallet():
 
-    return CreateWalletResponse("0x0b97F7B3FC38bF1DFf740d65B582c61b3E84FfC6")
+    return CreateWalletResponse(
+        wallet_address="0x0b97F7B3FC38bF1DFf740d65B582c61b3E84FfC6"
+    )
 
 
 @router.post(
@@ -49,11 +50,10 @@ async def send_eth(transaction_request: TransactionRequest):
     except KeyError:
         raise HTTPException(status_code=404, detail="Sender address not found")
 
-    transaction = blockchainSerivce.send_eth(
+    transaction = wallet_service.send_eth(
         sender_address, receiver_address, amount_in_ether, private_key
     )
-    txn_hash_hex = web3.to_hex(transaction)
 
     return TransactionResponse(
-        transaction_hash=txn_hash_hex, details="ETH sent successfully"
+        transaction_hash=transaction, details="ETH sent successfully"
     )
