@@ -6,7 +6,7 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
 from core.config import contract_settings
-from service.walletService import PrivateKeyService
+from service.private_key_service import PrivateKeyService
 from shemas.CreateWalletResponse import CreateWalletResponse
 from shemas.Data import Data
 from shemas.MetaData import MetaData
@@ -28,6 +28,7 @@ from shemas.TransferResourceResponse import TransferResourceResponse
 
 from api.routes.wallet_routes import router as wallet_router
 from api.routes.roles_routes import router as roles_router
+from api.routes.event_routes import router as event_router
 
 web3 = Web3(Web3.HTTPProvider(contract_settings.validator_address))
 web3.middleware_onion.inject(geth_poa_middleware, layer=0)
@@ -42,6 +43,7 @@ private_key_service = PrivateKeyService()
 router = APIRouter()
 router.include_router(wallet_router)
 router.include_router(roles_router)
+router.include_router(event_router)
 
 
 @router.get("/resource/templates", response_model=List[ResourceTemplateResponse])
@@ -466,47 +468,3 @@ async def set_metadata(request: MetaDataRequest):
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=f"Failed to send transaction: {e}")
-
-
-@router.get("/events/{event}")
-async def get_event_logs_with_optional_filters(
-    event: str,
-    receiver_address: Optional[str] = None,
-    sender_address: Optional[str] = None,
-    tokenId: Optional[int] = None,
-):
-
-    start_block = 0
-    end_block = web3.eth.block_number
-    batch_size = 1000
-
-    all_logs = []
-    for block in range(start_block, end_block + 1, batch_size):
-        batch_end_block = min(block + batch_size - 1, end_block)
-        events = contract.events[event].get_logs(
-            fromBlock=block, toBlock=batch_end_block
-        )
-        all_logs += [event.args for event in events]
-
-    logs = all_logs
-    if receiver_address:
-        if logs[0].get("to") != None:
-            logs = [
-                log for log in logs if log["to"].lower() == receiver_address.lower()
-            ]
-    if sender_address:
-        if logs[0].get("from") != None:
-            logs = [
-                log for log in logs if log["from"].lower() == sender_address.lower()
-            ]
-        if logs[0].get("caller") != None:
-            logs = [
-                log for log in logs if log["caller"].lower() == sender_address.lower()
-            ]
-    if tokenId:
-        if logs[0].get("id") != None:
-            logs = [log for log in logs if log["id"] == tokenId]
-        if logs[0].get("tokenId") != None:
-            logs = [log for log in logs if log["tokenId"] == tokenId]
-
-    return {"event": event, "data": logs}
