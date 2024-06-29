@@ -1,30 +1,9 @@
-import json
-from typing import List, Optional
-
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
 from core.config import contract_settings
 from service.private_key_service import PrivateKeyService
-from shemas.CreateWalletResponse import CreateWalletResponse
-from shemas.Data import Data
-from shemas.MetaData import MetaData
-from shemas.MetaDataRequest import MetaDataRequest
-from shemas.MetaDataResponse import MetaDataResponse
-from shemas.MintOneToManyRessourceRequest import MintOneToManyRessourceRequest
-from shemas.MintRessourceRequest import MintRessourceRequest
-from shemas.ResourceCreatedEventResponse import ResourceCreatedEventResponse
-from shemas.ResourceMetaDataChangedEventResponse import (
-    ResourceMetaDataChangedEventResponse,
-)
-from shemas.ResourceTemplateResponse import ResourceTemplateResponse
-from shemas.RoleAssignmentRequest import RoleAssignmentRequest
-from shemas.RoleResponse import RoleResponse
-from shemas.TransactionRequest import TransactionRequest
-from shemas.TransactionResponse import TransactionResponse
-from shemas.TransferResourceRequest import TransferResourceRequest
-from shemas.TransferResourceResponse import TransferResourceResponse
 
 from api.routes.wallet_routes import router as wallet_router
 from api.routes.roles_routes import router as roles_router
