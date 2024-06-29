@@ -1,8 +1,19 @@
-# BC24-API
+# BC24-API: Blockchain API
 
-This is the API for the BC24 Traceability project.
+## Presentation
 
-## Local Development
+This project is the API for communicating with the BC24 Traceability project, our food traceability blockchain specialized in meet.
+
+## Development
+
+### env variables
+
+Copy the `.env-template` and rename it to `.env`
+Provide a validator url as well as the address of the deployed contract.
+
+Additionally provide wallet addresses and private keys of the users that will be using the api
+
+### Run
 
 Follow these steps to launch the API locally:
 
@@ -23,66 +34,27 @@ Follow these steps to launch the API locally:
 4. Start the Uvicorn server with reload enabled:
 
    ```bash
-   uvicorn main:app --reload
+   uvicorn main:app --port 8080 --reload
    ```
 
 The server will start on `http://localhost:8000`. You can view the API documentation at `http://localhost:8000/docs`.
 
-### Running with Docker
+**NOTE**:
+Make sure to run the project with the following command on the Pi so it can communicate with the [Trace_connect webapplication](https://github.com/bc24-miage-dev/BC24-Trace_Connect/blob/master/README.md)
 
-If you prefer to use Docker for development or deployment, follow these steps to build and run your application inside a Docker container.
+```bash
+uvicorn main:app --port 8080 --reload
+```
 
-1. Build the Docker image:
+## Load Testing
 
-    ```bash
-    docker build -t bc24-api .
-    ```
+We use locust to do stress and load testing for the API and respectively for the underlying BC.
 
-    
-    This command builds a Docker image named `bc24-api` from the Dockerfile in the current directory.
-
-2. Run the Docker container:
-
-    ```bash
-    docker run -d --name bc24-api-container -p 8000:8000 bc24-api
-    ```
-
-    This command runs the `bc24-api` image in a container named `bc24-api-container`. It also maps port 8000 of the container to port 8000 on the host, allowing you to access the API at `http://localhost:8000`.
-
-You can now access the API and its documentation in the same way as running it locally without Docker.
-
-## Deployment to Raspberry Pi
-
-To deploy the Docker image to a Raspberry Pi, follow these steps:
-
-1. **Save the Docker Image**: First, save your Docker image to a tar file on your local machine.
-
+1. Make sure the api is running at `http://localhost:8000`
+2. Run the locust service
    ```bash
-   docker save bc24-api > bc24-api.tar
+      locust -f .\tests\stressTest.py
    ```
-
-2. **Transfer the Image to Raspberry Pi**: Use `scp` to securely transfer the image file to your Raspberry Pi. Replace `raspberry_pi_username` with your actual Raspberry Pi's username and `raspberry_pi_ip` with its IP address.
-
-   ```bash
-   scp bc24-api.tar pi@45.80.25.84:~/Documents
-   ```
-
-3. **Load the Image on Raspberry Pi**: SSH into your Raspberry Pi, navigate to the directory where you transferred the tar file, and load the image into Docker.
-
-   ```bash
-   ssh pi@45.80.25.84
-   cd ~/Documents
-   (rm -rf bc24-api.tar) # if the image is already present
-   docker load < bc24-api.tar
-   ```
-
-4. **Run the Docker Container on Raspberry Pi**: Finally, run the Docker container on your Raspberry Pi.  
-
-   ```bash
-   docker run -d --name bc24-api-container -p 8000:8000 bc24-api
-   ```
-   **Adjust the port if needed or already in use!**
-
-   This command runs the `bc24-api` image in a container named `bc24-api-container` on your Raspberry Pi. It also maps port 8000 of the container to port 8000 on the Raspberry Pi, allowing you to access the API at `http://raspberry_pi_ip:8000`.
-
-Now, your API is running on a Raspberry Pi, and you can access it using the Raspberry Pi's IP address.
+3. Navigate to `http://localhost:8089`
+4. Select a number of users, the time it takes to add a new user and provide the host (`http://localhost:8000`)
+5. Run the tests and observe the results

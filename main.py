@@ -20,6 +20,7 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
         return response
 
 app.add_middleware(NoCacheMiddleware)
+
 app.include_router(router, prefix=settings.api_prefix)
 
 @app.get("/")

@@ -1,6 +1,4 @@
 from pydantic import BaseModel
 
-
-class RoleAssignment(BaseModel):
+class CreateWalletResponse(BaseModel):
     wallet_address: str
-    role: str
