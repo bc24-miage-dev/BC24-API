@@ -29,6 +29,7 @@ from shemas.TransferResourceResponse import TransferResourceResponse
 from api.routes.wallet_routes import router as wallet_router
 from api.routes.roles_routes import router as roles_router
 from api.routes.event_routes import router as event_router
+from api.routes.resource_routes import router as resource_router
 
 web3 = Web3(Web3.HTTPProvider(contract_settings.validator_address))
 web3.middleware_onion.inject(geth_poa_middleware, layer=0)
@@ -45,85 +46,10 @@ router.include_router(wallet_router)
 router.include_router(roles_router)
 router.include_router(event_router)
 
-
-@router.get("/resource/templates", response_model=List[ResourceTemplateResponse])
-async def get_resources_templates(
-    resource_id: Optional[int] = None, required_role: Optional[str] = None
-):
-    try:
-        resources = contract.functions.getResourceTemplates().call()
-
-        filtered_resources = [
-            ResourceTemplateResponse(
-                resource_id=resource[0],
-                resource_name=resource[1],
-                needed_resources=resource[2],
-                needed_resources_amounts=resource[3],
-                initial_amount_minted=resource[4],
-                required_role=resource[5],
-                produces_resources=resource[6],
-                produces_resources_amounts=resource[7],
-                resource_type=resource[8],
-            )
-            for resource in resources
-            if (resource_id is None or resource[0] == resource_id)
-            and (required_role is None or resource[5] == required_role)
-        ]
-
-        return filtered_resources
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get resources: {e}")
+router.include_router(resource_router)
 
 
-@router.post("/resource/mint", response_model=ResourceCreatedEventResponse)
-async def create_resource(request: MintRessourceRequest):
-    try:
-        account = web3.eth.account.from_key(
-            private_key_service.get_private_key(request.from_wallet_address)
-        )
 
-        resource_id = request.resourceId
-        quantity = request.quantity
-        meta_data = json.dumps(request.metaData, indent=4)
-
-        ingredients = request.ingredients
-
-        transaction = contract.functions.mintRessource(
-            resource_id, quantity, meta_data, ingredients
-        ).build_transaction(
-            {
-                "from": account.address,
-                "chainId": 1337,
-                "gasPrice": web3.eth.gas_price,
-                "nonce": web3.eth.get_transaction_count(account.address),
-            }
-        )
-
-        signed_txn = web3.eth.account.sign_transaction(
-            transaction, private_key=account.key
-        )
-
-        txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-
-        txn_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
-
-        resource_created_events = (
-            contract.events.ResourceCreatedEvent().process_receipt(txn_receipt)
-        )
-
-        return_object = ResourceCreatedEventResponse(
-            tokenId=resource_created_events[0].args.tokenId,
-            ressourceName=resource_created_events[0].args.ressourceName,
-            message=resource_created_events[0].args.message,
-            caller=resource_created_events[0].args.caller,
-        )
-
-        return return_object
-
-    except Exception as e:
-        print(e)
-        raise HTTPException(status_code=500, detail=f"Failed to send transaction: {e}")
 
 
 @router.post("/resource/mintToMany", response_model=List[ResourceCreatedEventResponse])

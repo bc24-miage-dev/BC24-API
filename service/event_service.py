@@ -22,3 +22,6 @@ class EventService:
             all_logs += [event.args for event in events]
 
         return all_logs
+
+    def get_resource_created_event_by_receipt(self, txn_receipt):
+        return self.contract.events.ResourceCreatedEvent().process_receipt(txn_receipt)
