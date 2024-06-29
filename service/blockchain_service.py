@@ -13,6 +13,8 @@ class BlockchainService:
             abi=contract_settings.contract_abi,
         )
 
+        self.chain_id = 1337
+
     def create_wallet(self):
         acc = self.web3.eth.account.create()
         return acc
@@ -30,3 +32,40 @@ class BlockchainService:
         signed_txn = self.web3.eth.account.sign_transaction(txn, private_key)
         txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         return txn_hash
+
+    def get_available_roles(self):
+        resources = self.contract.functions.getResourceTemplates().call()
+        return list(set([resource[5] for resource in resources]))
+
+    def get_role_of(self, wallet_address):
+        if not self.web3.is_address(wallet_address):
+            raise Exception("Invalid wallet address")
+        roles = self.contract.functions.userRoles(wallet_address).call()
+        return roles
+
+    def assign_role_to_user(self, from_wallet, target_wallet_address, role):
+        if not self.web3.is_address(from_wallet.address):
+            raise Exception("Invalid wallet address")
+        if not self.web3.is_address(target_wallet_address):
+            raise Exception("Invalid wallet address")
+
+        txn_dict = self.contract.functions.giveUserRole(
+            target_wallet_address, role
+        ).build_transaction(
+            {
+                "from": from_wallet.address,
+                "chainId": self.chain_id,
+                "nonce": self.web3.eth.get_transaction_count(from_wallet.address),
+            }
+        )
+
+        tnx_receit = self._sign_and_send_txn(from_wallet, txn_dict)
+        return tnx_receit
+
+    def _sign_and_send_txn(self, from_wallet, txn_dict):
+        signed_txn = self.web3.eth.account.sign_transaction(
+            txn_dict, private_key=from_wallet.key
+        )
+        txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+        txn_receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
+        return txn_receipt

@@ -27,6 +27,7 @@ from shemas.TransferResourceRequest import TransferResourceRequest
 from shemas.TransferResourceResponse import TransferResourceResponse
 
 from api.routes.wallet_routes import router as wallet_router
+from api.routes.roles_routes import router as roles_router
 
 web3 = Web3(Web3.HTTPProvider(contract_settings.validator_address))
 web3.middleware_onion.inject(geth_poa_middleware, layer=0)
@@ -40,61 +41,7 @@ private_key_service = PrivateKeyService()
 
 router = APIRouter()
 router.include_router(wallet_router)
-
-
-@router.get("/roles", response_model=List[str])
-async def get_available_roles():
-    try:
-        resources = contract.functions.getResourceTemplates().call()
-        roles = list(set([resource[5] for resource in resources]))
-        return roles
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get roles: {e}")
-
-
-@router.get("/roles/{wallet_address}", response_model=RoleResponse)
-async def get_role_of_wallet_address(wallet_address: str):
-    try:
-        roles = contract.functions.userRoles(wallet_address).call()
-        return {"role": roles}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get roles: {e}")
-
-
-@router.post("/roles/assignRole")
-async def assign_role_to_user(request: RoleAssignmentRequest):
-    if not web3.is_address(request.from_wallet_address):
-        raise HTTPException(status_code=400, detail="Invalid wallet address")
-    if not web3.is_address(request.target_wallet_address):
-        raise HTTPException(status_code=400, detail="Invalid target wallet address")
-    try:
-        # TODO: Replace these with your account details
-        account = web3.eth.account.from_key(
-            private_key_service.get_private_key(request.from_wallet_address)
-        )
-
-        txn_dict = contract.functions.giveUserRole(
-            request.target_wallet_address, request.role
-        ).build_transaction(
-            {
-                "from": account.address,
-                "chainId": 1337,
-                "nonce": web3.eth.get_transaction_count(account.address),
-            }
-        )
-
-        signed_txn = web3.eth.account.sign_transaction(
-            txn_dict, private_key=account.key
-        )
-
-        txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-
-        web3.eth.wait_for_transaction_receipt(txn_hash)
-
-        return {"status": "Role assigned successfully"}
-    except Exception as e:
-        print(e)
-        raise HTTPException(status_code=500, detail=f"Failed to send transaction: {e}")
+router.include_router(roles_router)
 
 
 @router.get("/resource/templates", response_model=List[ResourceTemplateResponse])
