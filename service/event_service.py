@@ -25,3 +25,11 @@ class EventService:
 
     def get_resource_created_event_by_receipt(self, txn_receipt):
         return self.contract.events.ResourceCreatedEvent().process_receipt(txn_receipt)
+
+    def get_resource_transferred_event_by_receipt(self, txn_receipt):
+        return self.contract.events.TransferSingle().process_receipt(txn_receipt)
+
+    def get_resource_metaData_changed_event_by_receipt(self, txn_receipt):
+        return self.contract.events.ResourceMetaDataChangedEvent().process_receipt(
+            txn_receipt
+        )

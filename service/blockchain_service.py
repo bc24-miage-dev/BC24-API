@@ -1,6 +1,9 @@
+import json
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 from core.config import contract_settings
+from shemas.Data import Data
+from shemas.MetaData import MetaData
 
 
 class BlockchainService:
