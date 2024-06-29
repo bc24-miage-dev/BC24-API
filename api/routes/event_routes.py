@@ -82,7 +82,7 @@ async def get_metadata_changed_events(
     if tokenId:
         logs = [log for log in logs if log["tokenId"] == tokenId]
 
-    return {"event": "ResourceMetadataChanged", "data": logs}
+    return {"event": "ResourceMetaDataChangedEvent", "data": logs}
 
 
 @router.get("/ResourceCreated")
