@@ -2,15 +2,16 @@ import os
 from dotenv import load_dotenv
 import re
 
+
 class PrivateKeyService:
     def __init__(self):
         # Load environment variables from .env file
         load_dotenv()
 
-        with open('.env', 'r') as file:
+        with open(".env", "r") as file:
             content = file.read()
 
-        addresses = re.findall(r'0x[a-fA-F0-9]{40}', content)
+        addresses = re.findall(r"0x[a-fA-F0-9]{40}", content)
 
         self.private_keys = {}
         for address in addresses:
@@ -23,11 +24,10 @@ class PrivateKeyService:
             return self.private_keys[wallet_address]
         else:
             raise Exception("Wallet address not found")
-        
-    
-    def add_private_key(self,account, key):
+
+    def add_private_key(self, account, key):
         self.private_keys[account] = key
-        with open('.env', 'a') as env_file:
+        with open(".env", "a") as env_file:
             # Format the string to be written
             env_entry = f"{account}={key}\n"
             # Write the formatted string to the .env file

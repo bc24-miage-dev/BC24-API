@@ -2,7 +2,7 @@ from typing import List
 from fastapi import APIRouter, HTTPException
 
 from service.blockchain_service import BlockchainService
-from service.walletService import PrivateKeyService
+from service.private_key_service import PrivateKeyService
 from shemas.RoleAssignmentRequest import RoleAssignmentRequest
 from shemas.RoleResponse import RoleResponse
 

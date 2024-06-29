@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from service.blockchain_service import BlockchainService
-from service.walletService import PrivateKeyService
+from service.private_key_service import PrivateKeyService
 from shemas.CreateWalletResponse import CreateWalletResponse
 from shemas.TransactionRequest import TransactionRequest
 from shemas.TransactionResponse import TransactionResponse
