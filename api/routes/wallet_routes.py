@@ -20,11 +20,9 @@ router = APIRouter(
 @router.get("/create", response_model=CreateWalletResponse)
 async def create_wallet():
     try:
-        acc = web3.eth.account.create()
+        acc = blockchainSerivce.create_wallet()
         private_key_service.add_private_key(acc.address, web3.to_hex(acc.key))
-
         return CreateWalletResponse(wallet_address=acc.address)
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -44,7 +42,6 @@ async def send_eth(transaction_request: TransactionRequest):
     sender_address = transaction_request.sender_address
     receiver_address = transaction_request.receiver_address
     amount_in_ether = transaction_request.amount
-    amount_in_wei = web3.to_wei(amount_in_ether, "ether")
 
     # Retrieve the private key securely
     try:
@@ -52,20 +49,10 @@ async def send_eth(transaction_request: TransactionRequest):
     except KeyError:
         raise HTTPException(status_code=404, detail="Sender address not found")
 
-    # Build and sign the transaction
-    nonce = web3.eth.get_transaction_count(sender_address)
-    txn = {
-        "nonce": nonce,
-        "to": receiver_address,
-        "value": amount_in_wei,
-        "gas": 2000000,
-        "gasPrice": web3.to_wei("50", "gwei"),
-    }
-    signed_txn = web3.eth.account.sign_transaction(txn, private_key)
-
-    # Send the transaction
-    txn_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    txn_hash_hex = web3.to_hex(txn_hash)
+    transaction = blockchainSerivce.send_eth(
+        sender_address, receiver_address, amount_in_ether, private_key
+    )
+    txn_hash_hex = web3.to_hex(transaction)
 
     return TransactionResponse(
         transaction_hash=txn_hash_hex, details="ETH sent successfully"
