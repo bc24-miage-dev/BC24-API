@@ -301,7 +301,7 @@ async def get_resource_by_wallet_address_with_optional_metaData(
             token_id = event.id
             value = event.value
 
-            active_tokens[token_id] = -value
+            active_tokens[token_id] -= value
 
         # Filter out tokens with zero balance
         active_tokens = {
