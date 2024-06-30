@@ -331,13 +331,24 @@ async def get_metadata_of_resource(tokenId: int, recursive: Optional[bool] = Fal
 
         transfer_events = event_service.get_events("TransferSingle")
         token_logs = [log for log in transfer_events if log["id"] == tokenId]
-        token_owner = token_logs[-1]["to"]
+
+        # Filter out token logs where "to" address is the zero address
+        valid_token_logs_if_token_is_still_active = [
+            log
+            for log in token_logs
+            if log["to"] != "0x0000000000000000000000000000000000000000"
+        ]
+
+        token_owner = valid_token_logs_if_token_is_still_active[-1]["to"]
+        token_quantity = resource_service.get_balance_of_token(token_owner, tokenId)
+
+        # if the last owner does not ownn the token anymore, set the owner to the zero address
+        if token_quantity == 0:
+            token_owner = token_logs[-1]["to"]
+            token_quantity = 0
 
         enriched_metadata.current_owner = token_owner
-
-        enriched_metadata.quantity = resource_service.get_balance_of_token(
-            token_owner, tokenId
-        )
+        enriched_metadata.quantity = token_quantity
 
         return enriched_metadata
     except Exception as e:
